@@ -6,9 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "migrate": "node scripts/migrate.js",
-    "seed": "node scripts/seed.js",
-    "test": "jest"
+    "migrate": "node ../scripts/migrate.js",
+    "seed": "node ../scripts/seed.js",
+    "test": "jest",
+    "setup": "npm run migrate && npm run seed"
   },
   "keywords": [
     "real-estate",

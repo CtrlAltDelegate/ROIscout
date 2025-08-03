@@ -74,9 +74,8 @@ npm install
 cp .env.example .env
 # Edit .env with your database credentials and API keys
 
-# Setup database
-npm run migrate
-npm run seed
+# Setup database (combined command)
+npm run setup
 
 # Start development server
 npm run dev

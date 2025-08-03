@@ -1,0 +1,25 @@
+{
+  "name": "roi-scout",
+  "version": "1.0.0",
+  "description": "ROI Scout - Real Estate Investment Analytics Platform",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "setup": "cd backend && npm install && npm run setup && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "test": "cd backend && npm test && cd ../frontend && npm test"
+  },
+  "keywords": [
+    "real-estate",
+    "investment",
+    "roi",
+    "analytics",
+    "saas"
+  ],
+  "author": "ROI Scout Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

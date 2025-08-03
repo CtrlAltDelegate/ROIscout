@@ -29,8 +29,16 @@ app.use(helmet({
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.netlify.app'] 
-    : ['http://localhost:3000'],
+    ? [
+        'https://roi-scout.netlify.app',
+        'https://roiscout.netlify.app',
+        // Add your actual Netlify domain here
+        process.env.FRONTEND_URL || 'https://your-app.netlify.app'
+      ] 
+    : [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+      ],
   credentials: true,
 }));
 
