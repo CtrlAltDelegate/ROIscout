@@ -1,45 +1,65 @@
 {
-  "name": "roi-scout-backend",
+  "name": "roiscout-backend",
   "version": "1.0.0",
-  "description": "ROI Scout Backend API - Real Estate Investment Analytics",
+  "description": "ROIscout backend API for real estate investment analysis",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "migrate": "node ../scripts/migrate.js",
-    "seed": "node ../scripts/seed.js",
     "test": "jest",
-    "setup": "npm run migrate && npm run seed"
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "ingest": "node scripts/ingest-data.js",
+    "cleanup": "node scripts/cleanup-data.js"
   },
   "keywords": [
     "real-estate",
     "investment",
+    "property-analysis",
     "roi",
-    "analytics",
-    "api"
+    "rental-analysis"
   ],
-  "author": "ROI Scout Team",
+  "author": "ROIscout Team",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "helmet": "^7.0.0",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "pg": "^8.11.3",
     "dotenv": "^16.3.1",
-    "pg": "^8.11.1",
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.1",
-    "joi": "^17.9.2",
-    "axios": "^1.4.0",
-    "compression": "^1.7.4",
+    "jsonwebtoken": "^9.0.2",
+    "joi": "^17.11.0",
     "morgan": "^1.10.0",
-    "express-rate-limit": "^6.8.1"
+    "compression": "^1.7.4",
+    "nodemailer": "^6.9.7",
+    "stripe": "^14.7.0",
+    "redis": "^4.6.10",
+    "uuid": "^9.0.1",
+    "multer": "^1.4.5-lts.1",
+    "csv-parser": "^3.0.0",
+    "fast-csv": "^4.3.6"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "jest": "^29.6.1",
-    "supertest": "^6.3.3"
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "@types/jest": "^29.5.8",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/roiscout.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/roiscout/issues"
+  },
+  "homepage": "https://roiscout.com"
 }
