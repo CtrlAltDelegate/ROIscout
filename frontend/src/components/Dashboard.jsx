@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Map, List, Settings, Bell, User, Search, TrendingUp, Home, DollarSign, Target, Star } from 'lucide-react';
+import { BarChart3, Map, List, Bell, User, Search, TrendingUp, Home, DollarSign, Target, Star } from 'lucide-react';
 
 const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
