@@ -84,48 +84,45 @@ class PropertyDataIngestion {
         };
     }
 
-    // Zillow-style property scraper (conceptual - would need real API/scraping)
-    async scrapeZillowData(zipCode, limit = 50) {
-        console.log(`Scraping Zillow data for zip code: ${zipCode}`);
+    // Real property data scraper using RealEstateAPIs
+    async scrapePropertyData(zipCode, limit = 50) {
+        console.log(`Fetching real property data for zip code: ${zipCode}`);
         
-        // This is a placeholder - in reality you'd use:
-        // 1. Zillow API (if available)
-        // 2. Web scraping with proper headers/delays
-        // 3. Third-party real estate APIs (RentSpree, Bridge, etc.)
+        const RealEstateAPIs = require('./RealEstateAPIs');
+        const apis = new RealEstateAPIs();
         
-        // Simulated Zillow data structure
-        const mockProperties = [];
-        for (let i = 0; i < limit; i++) {
-            const basePrice = 200000 + Math.random() * 800000;
-            const sqft = 800 + Math.random() * 2500;
-            const beds = Math.floor(Math.random() * 4) + 1;
-            const baths = Math.floor(Math.random() * 3) + 1;
+        try {
+            // Try multiple data sources
+            let properties = [];
             
-            mockProperties.push({
-                external_id: `zillow_${zipCode}_${i + 1}`,
-                address: `${1000 + i} Sample St`,
-                city: 'Sample City',
-                state: 'CA',
-                zip_code: zipCode,
-                latitude: 34.0522 + (Math.random() - 0.5) * 0.1,
-                longitude: -118.2437 + (Math.random() - 0.5) * 0.1,
-                property_type: this.normalizePropertyType(['Single Family', 'Condo', 'Townhouse'][Math.floor(Math.random() * 3)]),
-                bedrooms: beds,
-                bathrooms: baths,
-                square_feet: Math.floor(sqft),
-                year_built: 1950 + Math.floor(Math.random() * 73),
-                list_price: Math.floor(basePrice),
-                data_source: 'zillow',
-                property_metadata: {
-                    listing_url: `https://zillow.com/homedetails/sample-${i + 1}`,
-                    photos: [`https://photos.zillow.com/sample-${i + 1}-1.jpg`],
-                    description: `Beautiful ${beds} bed, ${baths} bath home in great neighborhood.`,
-                    listing_date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-                }
-            });
+            // 1. Try Realtor.com API first
+            if (process.env.REALTOR_API_KEY) {
+                console.log('Fetching from Realtor.com API...');
+                const realtorData = await apis.getRealtorProperties(zipCode, limit);
+                properties = properties.concat(realtorData);
+            }
+            
+            // 2. Try RentSpree API for additional data
+            if (process.env.RENTSPREE_API_KEY && properties.length < limit) {
+                console.log('Fetching from RentSpree API...');
+                const rentspreeData = await apis.getRentspreeData(zipCode);
+                properties = properties.concat(rentspreeData);
+            }
+            
+            // 3. Try Bridge API for MLS data
+            if (process.env.BRIDGE_API_KEY && properties.length < limit) {
+                console.log('Fetching from Bridge API...');
+                const bridgeData = await apis.getBridgeMLSData(zipCode, limit - properties.length);
+                properties = properties.concat(bridgeData);
+            }
+            
+            console.log(`Found ${properties.length} real properties for ${zipCode}`);
+            return properties.slice(0, limit);
+            
+        } catch (error) {
+            console.error(`Error fetching real property data for ${zipCode}:`, error);
+            return [];
         }
-        
-        return mockProperties;
     }
 
     // Rental comps scraper (Rentometer-style)

@@ -20,11 +20,12 @@ class CompleteDataIngestion {
         
         // Configuration
         this.config = {
-            zipCodes: process.env.TEST_ZIP_CODES?.split(',') || ['90210', '10001', '60601'],
+            zipCodes: process.env.TARGET_ZIP_CODES?.split(',') || ['90210', '10001', '60601', '30309', '78701'],
             propertiesPerZip: 25,
             includeRentals: true,
-            enableMockData: process.env.ENABLE_MOCK_DATA === 'true',
-            cleanupOldData: true
+            enableMockData: false, // Always use real data
+            cleanupOldData: true,
+            requireAPIKeys: true // Require at least one API key to be configured
         };
     }
 

@@ -83,28 +83,32 @@ const dataController = {
 
       const result = await query(queryText, params);
       
-      // If no data found, try to fetch from external APIs
+      // If no data found, try to fetch real data from properties table
       if (result.rows.length === 0) {
-        console.log('No data found in database, attempting to fetch from external APIs...');
+        console.log('No data found in zip_data table, fetching from properties table...');
         try {
-          await dataService.fetchAndStoreData(filters);
-          // Retry query after fetching
-          const retryResult = await query(queryText, params);
-          return res.json({
-            data: retryResult.rows,
-            total: retryResult.rows.length,
-            filters: filters,
-            source: 'external_api',
-          });
-        } catch (apiError) {
-          console.log('External API fetch failed, returning sample data');
-          // Return sample data for demo purposes
-          const sampleData = dataService.generateSampleData(filters);
-          return res.json({
-            data: sampleData,
-            total: sampleData.length,
-            filters: filters,
-            source: 'sample_data',
+          const realData = await dataService.fetchRealData(filters);
+          if (realData.length > 0) {
+            return res.json({
+              data: realData,
+              total: realData.length,
+              filters: filters,
+              source: 'properties_table',
+            });
+          } else {
+            return res.json({
+              data: [],
+              total: 0,
+              filters: filters,
+              source: 'no_data',
+              message: 'No properties found matching your criteria. Try running data ingestion first.'
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching real data:', error);
+          return res.status(500).json({
+            error: 'Data Fetch Failed',
+            message: 'Unable to retrieve property data',
           });
         }
       }

@@ -19,112 +19,62 @@ const PropertyList = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Mock data - same as map component, in real app this would be shared state
-  const mockProperties = [
-    {
-      id: '1',
-      address: '123 Beverly Hills Dr',
-      city: 'Beverly Hills',
-      state: 'CA',
-      zipCode: '90210',
-      listPrice: 750000,
-      estimatedRent: 3500,
-      priceToRentRatio: 5.6,
-      bedrooms: 3,
-      bathrooms: 2.5,
-      squareFeet: 1800,
-      propertyType: 'Single Family',
-      ratioVsMarket: 18.5,
-      capRate: 4.8,
-      dataSource: 'Zillow',
-      lastUpdated: '2024-01-15',
-      anomalyFlag: true
-    },
-    {
-      id: '2',
-      address: '456 Sunset Blvd',
-      city: 'West Hollywood',
-      state: 'CA',
-      zipCode: '90069',
-      listPrice: 550000,
-      estimatedRent: 2800,
-      priceToRentRatio: 6.1,
-      bedrooms: 2,
-      bathrooms: 2,
-      squareFeet: 1200,
-      propertyType: 'Condo',
-      ratioVsMarket: 22.3,
-      capRate: 5.2,
-      dataSource: 'Redfin',
-      lastUpdated: '2024-01-14',
-      anomalyFlag: true
-    },
-    {
-      id: '3',
-      address: '789 Hollywood Blvd',
-      city: 'Hollywood',
-      state: 'CA',
-      zipCode: '90028',
-      listPrice: 425000,
-      estimatedRent: 2200,
-      priceToRentRatio: 6.2,
-      bedrooms: 1,
-      bathrooms: 1,
-      squareFeet: 850,
-      propertyType: 'Condo',
-      ratioVsMarket: 15.8,
-      capRate: 5.8,
-      dataSource: 'MLS',
-      lastUpdated: '2024-01-13',
-      anomalyFlag: false
-    },
-    {
-      id: '4',
-      address: '321 Venice Beach',
-      city: 'Venice',
-      state: 'CA',
-      zipCode: '90291',
-      listPrice: 680000,
-      estimatedRent: 3200,
-      priceToRentRatio: 5.6,
-      bedrooms: 2,
-      bathrooms: 2,
-      squareFeet: 1100,
-      propertyType: 'Townhouse',
-      ratioVsMarket: 12.4,
-      capRate: 4.9,
-      dataSource: 'Zillow',
-      lastUpdated: '2024-01-12',
-      anomalyFlag: false
-    },
-    {
-      id: '5',
-      address: '555 Santa Monica Blvd',
-      city: 'Santa Monica',
-      state: 'CA',
-      zipCode: '90401',
-      listPrice: 890000,
-      estimatedRent: 4200,
-      priceToRentRatio: 5.7,
-      bedrooms: 3,
-      bathrooms: 3,
-      squareFeet: 1600,
-      propertyType: 'Condo',
-      ratioVsMarket: 19.2,
-      capRate: 5.1,
-      dataSource: 'Redfin',
-      lastUpdated: '2024-01-11',
-      anomalyFlag: true
+  // Fetch properties from API
+  const fetchProperties = async (searchFilters = {}) => {
+    setLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      Object.keys(searchFilters).forEach(key => {
+        if (searchFilters[key]) {
+          params.append(key, searchFilters[key]);
+        }
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/properties?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const propertiesData = data.properties || data.data || [];
+      
+      // Transform API data to match component expectations
+      const transformedProperties = propertiesData.map(prop => ({
+        id: prop.id,
+        address: prop.address,
+        city: prop.city,
+        state: prop.state,
+        zipCode: prop.zip_code,
+        listPrice: prop.list_price,
+        estimatedRent: prop.estimated_rent,
+        priceToRentRatio: prop.price_to_rent_ratio,
+        bedrooms: prop.bedrooms,
+        bathrooms: prop.bathrooms,
+        squareFeet: prop.square_feet,
+        propertyType: prop.property_type,
+        capRate: prop.cap_rate,
+        dataSource: prop.data_source,
+        lastUpdated: prop.last_updated,
+        anomalyFlag: prop.price_to_rent_ratio > 6.0 // Flag properties with good ratios
+      }));
+      
+      setProperties(transformedProperties);
+      setFilteredProperties(transformedProperties);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+      setProperties([]);
+      setFilteredProperties([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setProperties(mockProperties);
-      setFilteredProperties(mockProperties);
-      setLoading(false);
-    }, 800);
+    fetchProperties();
   }, []);
 
   // Apply search and filters

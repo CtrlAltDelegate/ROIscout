@@ -16,89 +16,62 @@ const PropertyMap = () => {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock data for demo - in real app this would come from your API
-  const mockProperties = [
-    {
-      id: '1',
-      address: '123 Beverly Hills Dr',
-      city: 'Beverly Hills',
-      state: 'CA',
-      zipCode: '90210',
-      lat: 34.0901,
-      lng: -118.4065,
-      listPrice: 750000,
-      estimatedRent: 3500,
-      priceToRentRatio: 5.6,
-      bedrooms: 3,
-      bathrooms: 2.5,
-      squareFeet: 1800,
-      propertyType: 'single_family',
-      ratioVsMarket: 18.5,
-      capRate: 4.8
-    },
-    {
-      id: '2', 
-      address: '456 Sunset Blvd',
-      city: 'West Hollywood',
-      state: 'CA',
-      zipCode: '90069',
-      lat: 34.0928,
-      lng: -118.3870,
-      listPrice: 550000,
-      estimatedRent: 2800,
-      priceToRentRatio: 6.1,
-      bedrooms: 2,
-      bathrooms: 2,
-      squareFeet: 1200,
-      propertyType: 'condo',
-      ratioVsMarket: 22.3,
-      capRate: 5.2
-    },
-    {
-      id: '3',
-      address: '789 Hollywood Blvd',
-      city: 'Hollywood',
-      state: 'CA', 
-      zipCode: '90028',
-      lat: 34.1022,
-      lng: -118.3267,
-      listPrice: 425000,
-      estimatedRent: 2200,
-      priceToRentRatio: 6.2,
-      bedrooms: 1,
-      bathrooms: 1,
-      squareFeet: 850,
-      propertyType: 'condo',
-      ratioVsMarket: 15.8,
-      capRate: 5.8
-    },
-    {
-      id: '4',
-      address: '321 Venice Beach',
-      city: 'Venice',
-      state: 'CA',
-      zipCode: '90291',
-      lat: 33.9850,
-      lng: -118.4695,
-      listPrice: 680000,
-      estimatedRent: 3200,
-      priceToRentRatio: 5.6,
-      bedrooms: 2,
-      bathrooms: 2,
-      squareFeet: 1100,
-      propertyType: 'townhouse',
-      ratioVsMarket: 12.4,
-      capRate: 4.9
+  // Fetch properties from API
+  const fetchProperties = async (searchFilters = {}) => {
+    setLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      Object.keys(searchFilters).forEach(key => {
+        if (searchFilters[key]) {
+          params.append(key, searchFilters[key]);
+        }
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/properties?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const propertiesData = data.properties || data.data || [];
+      
+      // Transform API data to match component expectations
+      const transformedProperties = propertiesData.map(prop => ({
+        id: prop.id,
+        address: prop.address,
+        city: prop.city,
+        state: prop.state,
+        zipCode: prop.zip_code,
+        lat: prop.latitude,
+        lng: prop.longitude,
+        listPrice: prop.list_price,
+        estimatedRent: prop.estimated_rent,
+        priceToRentRatio: prop.price_to_rent_ratio,
+        bedrooms: prop.bedrooms,
+        bathrooms: prop.bathrooms,
+        squareFeet: prop.square_feet,
+        propertyType: prop.property_type,
+        capRate: prop.cap_rate,
+        ratioVsMarket: ((prop.price_to_rent_ratio - 4.5) / 4.5 * 100).toFixed(1) // Calculate vs market average
+      }));
+      
+      setProperties(transformedProperties);
+      setFilteredProperties(transformedProperties);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+      setProperties([]);
+      setFilteredProperties([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setProperties(mockProperties);
-      setFilteredProperties(mockProperties);
-      setLoading(false);
-    }, 1000);
+    fetchProperties(filters);
   }, []);
 
   // Filter properties based on current filters

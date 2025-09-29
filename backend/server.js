@@ -124,7 +124,96 @@ class ROIscoutBackend {
             }
         });
 
+        // GET /api/analytics/dashboard-stats - Dashboard statistics for frontend
+        this.server.app.get('/api/analytics/dashboard-stats', async (req, res) => {
+            try {
+                // Get total properties count
+                const totalPropertiesResult = await this.db.query(`
+                    SELECT COUNT(*) as count FROM properties WHERE is_active = true
+                `);
+                
+                // Get average price-to-rent ratio
+                const avgRatioResult = await this.db.query(`
+                    SELECT AVG(price_to_rent_ratio) as avg_ratio 
+                    FROM properties 
+                    WHERE is_active = true AND price_to_rent_ratio > 0
+                `);
+                
+                // Get exceptional deals (ratio > 6.0)
+                const exceptionalDealsResult = await this.db.query(`
+                    SELECT COUNT(*) as count 
+                    FROM properties 
+                    WHERE is_active = true AND price_to_rent_ratio > 6.0
+                `);
+                
+                // Get recent activity (properties added in last 7 days)
+                const recentActivityResult = await this.db.query(`
+                    SELECT 
+                        address, city, state, zip_code, 
+                        price_to_rent_ratio, list_price, 
+                        created_at
+                    FROM properties 
+                    WHERE is_active = true 
+                    AND created_at > NOW() - INTERVAL '7 days'
+                    ORDER BY created_at DESC
+                    LIMIT 10
+                `);
+                
+                // Calculate market trend (simplified)
+                const marketTrendResult = await this.db.query(`
+                    SELECT 
+                        AVG(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN price_to_rent_ratio END) as recent_avg,
+                        AVG(CASE WHEN created_at <= NOW() - INTERVAL '30 days' THEN price_to_rent_ratio END) as older_avg
+                    FROM properties 
+                    WHERE is_active = true AND price_to_rent_ratio > 0
+                `);
+                
+                const recentAvg = parseFloat(marketTrendResult.rows[0].recent_avg) || 0;
+                const olderAvg = parseFloat(marketTrendResult.rows[0].older_avg) || 0;
+                const trendPercent = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg * 100).toFixed(1) : 0;
+                
+                // Format recent activity
+                const recentActivity = recentActivityResult.rows.map((prop, index) => ({
+                    id: index + 1,
+                    type: prop.price_to_rent_ratio > 6.0 ? 'new_deal' : 'new_property',
+                    message: prop.price_to_rent_ratio > 6.0 
+                        ? `New exceptional deal found in ${prop.city}, ${prop.state}`
+                        : `New property added in ${prop.city}, ${prop.state}`,
+                    time: this.getTimeAgo(prop.created_at),
+                    ratio: parseFloat(prop.price_to_rent_ratio) || 0
+                }));
+                
+                res.json({
+                    totalProperties: parseInt(totalPropertiesResult.rows[0].count) || 0,
+                    avgRatio: parseFloat(avgRatioResult.rows[0].avg_ratio).toFixed(1) || 0,
+                    exceptionalDeals: parseInt(exceptionalDealsResult.rows[0].count) || 0,
+                    savedSearches: 0, // TODO: Implement saved searches
+                    marketTrend: `${trendPercent >= 0 ? '+' : ''}${trendPercent}%`,
+                    recentActivity: recentActivity
+                });
+            } catch (error) {
+                console.error('Dashboard stats error:', error);
+                res.status(500).json({ error: 'Failed to get dashboard statistics' });
+            }
+        });
+
         console.log('✅ Enhanced analytics routes configured');
+    }
+
+    // Helper function to format time ago
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - new Date(date);
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffDays > 0) {
+            return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        } else if (diffHours > 0) {
+            return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        } else {
+            return 'Just now';
+        }
     }
 
     async start() {

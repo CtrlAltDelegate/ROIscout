@@ -5,39 +5,52 @@ const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
   const [notifications, setNotifications] = useState(3);
 
-  // Mock stats for the dashboard
-  const stats = {
-    totalProperties: 1247,
-    avgRatio: 4.8,
-    exceptionalDeals: 23,
-    savedSearches: 5,
-    marketTrend: '+12.5%'
+  // Real dashboard stats from API
+  const [stats, setStats] = useState({
+    totalProperties: 0,
+    avgRatio: 0,
+    exceptionalDeals: 0,
+    savedSearches: 0,
+    marketTrend: '0%'
+  });
+
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Fetch dashboard statistics
+  const fetchDashboardStats = async () => {
+    setStatsLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${API_BASE_URL}/analytics/dashboard-stats`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      setStats({
+        totalProperties: data.totalProperties || 0,
+        avgRatio: data.avgRatio || 0,
+        exceptionalDeals: data.exceptionalDeals || 0,
+        savedSearches: data.savedSearches || 0,
+        marketTrend: data.marketTrend || '0%'
+      });
+      
+      setRecentActivity(data.recentActivity || []);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      // Keep default values on error
+    } finally {
+      setStatsLoading(false);
+    }
   };
 
-  // Mock recent activity
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'new_deal',
-      message: 'New exceptional deal found in Beverly Hills',
-      time: '2 hours ago',
-      ratio: 6.8
-    },
-    {
-      id: 2,
-      type: 'price_drop',
-      message: 'Price dropped on saved property in Venice',
-      time: '4 hours ago',
-      change: '-$25,000'
-    },
-    {
-      id: 3,
-      type: 'market_update',
-      message: 'Market conditions improved in 90210',
-      time: '1 day ago',
-      trend: '+5.2%'
-    }
-  ];
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
 
   const TabButton = ({ id, icon: Icon, label, isActive, onClick }) => (
     <button

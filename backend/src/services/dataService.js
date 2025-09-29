@@ -87,36 +87,78 @@ const dataService = {
   },
 
   /**
-   * Generate sample data for demo purposes
+   * Fetch real data from database instead of generating sample data
    */
-  generateSampleData(filters) {
-    const sampleData = [];
-    const { state } = filters;
+  async fetchRealData(filters) {
+    try {
+      const { query } = require('../config/database');
+      
+      // Build query conditions
+      const conditions = [];
+      const params = [];
+      let paramCount = 0;
 
-    // Generate sample zip codes based on state
-    const zipCodes = this.getSampleZipCodesForState(state);
-    const counties = this.getSampleCounties(state);
+      if (filters.state) {
+        paramCount++;
+        conditions.push(`state = $${paramCount}`);
+        params.push(filters.state.toUpperCase());
+      }
 
-    for (let i = 0; i < Math.min(20, zipCodes.length); i++) {
-      const medianPrice = Math.floor(Math.random() * 300000) + 100000; // $100k - $400k
-      const medianRent = Math.floor(medianPrice * (0.005 + Math.random() * 0.010)); // 0.5% - 1.5% of price
+      if (filters.county) {
+        paramCount++;
+        conditions.push(`county ILIKE $${paramCount}`);
+        params.push(`%${filters.county}%`);
+      }
 
-      const metrics = this.calculateROIMetrics(medianPrice, medianRent);
+      if (filters.zipCode) {
+        paramCount++;
+        conditions.push(`zip_code = $${paramCount}`);
+        params.push(filters.zipCode);
+      }
 
-      sampleData.push({
-        zip_code: zipCodes[i],
-        state: state.toUpperCase(),
-        county: counties[i % counties.length].name,
-        median_price: medianPrice,
-        median_rent: medianRent,
-        rent_to_price_ratio: metrics.rentToPriceRatio,
-        gross_rental_yield: metrics.grossRentalYield,
-        grm: metrics.grm,
-        last_updated: new Date().toISOString(),
-      });
+      if (filters.minPrice) {
+        paramCount++;
+        conditions.push(`list_price >= $${paramCount}`);
+        params.push(filters.minPrice);
+      }
+
+      if (filters.maxPrice) {
+        paramCount++;
+        conditions.push(`list_price <= $${paramCount}`);
+        params.push(filters.maxPrice);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      
+      const queryText = `
+        SELECT 
+          zip_code,
+          state,
+          city as county,
+          AVG(list_price)::INTEGER as median_price,
+          AVG(estimated_rent)::INTEGER as median_rent,
+          AVG(price_to_rent_ratio) as rent_to_price_ratio,
+          AVG(cap_rate) as gross_rental_yield,
+          AVG(list_price / NULLIF(estimated_rent * 12, 0)) as grm,
+          MAX(last_updated) as last_updated,
+          COUNT(*) as property_count
+        FROM properties 
+        ${whereClause}
+        AND is_active = true
+        AND list_price > 0
+        AND estimated_rent > 0
+        GROUP BY zip_code, state, city
+        ORDER BY AVG(cap_rate) DESC
+        LIMIT 50
+      `;
+
+      const result = await query(queryText, params);
+      return result.rows;
+      
+    } catch (error) {
+      console.error('Error fetching real data:', error);
+      return [];
     }
-
-    return sampleData.sort((a, b) => b.gross_rental_yield - a.gross_rental_yield);
   },
 
   /**
