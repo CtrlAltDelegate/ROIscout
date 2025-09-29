@@ -1,0 +1,13 @@
+{
+  "phases": {
+    "setup": {
+      "nixPkgs": ["nodejs-18_x"]
+    },
+    "install": {
+      "cmds": ["npm install --production"]
+    }
+  },
+  "start": {
+    "cmd": "npm start"
+  }
+}
