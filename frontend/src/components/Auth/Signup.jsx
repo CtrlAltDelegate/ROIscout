@@ -124,4 +124,4 @@ const Signup = ({ onLogin }) => {
   );
 };
 
-export { Login, Signup };
+export default Signup;
