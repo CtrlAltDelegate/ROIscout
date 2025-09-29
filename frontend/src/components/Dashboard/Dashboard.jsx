@@ -3,7 +3,7 @@ import { BarChart3, Map, List, Settings, Bell, User, Search, TrendingUp, Home, D
 
 const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
-  const [notifications, setNotifications] = useState(3);
+  const [notifications] = useState(3);
 
   // Mock stats for the dashboard
   const stats = {
