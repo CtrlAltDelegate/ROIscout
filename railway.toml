@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+buildCommand = "cd backend && npm ci --only=production"
 
 [deploy]
 startCommand = "cd backend && npm start"
@@ -9,7 +10,4 @@ restartPolicyType = "on_failure"
 
 [env]
 NODE_ENV = "production"
-PORT = { default = "3000" }
-
-[services.backend]
-source = "backend"
+PORT = { default = "5000" }

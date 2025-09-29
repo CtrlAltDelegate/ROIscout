@@ -232,9 +232,25 @@ class ROIscoutBackend {
             console.log('🚀 Starting ROIscout Backend Server...');
             console.log('=====================================');
             
-            // Test database connection
-            await this.db.query('SELECT NOW()');
-            console.log('✅ Database connection established');
+            // Test database connection with retry logic
+            let dbConnected = false;
+            let retries = 3;
+            
+            while (!dbConnected && retries > 0) {
+                try {
+                    await this.db.query('SELECT NOW()');
+                    console.log('✅ Database connection established');
+                    dbConnected = true;
+                } catch (dbError) {
+                    retries--;
+                    console.log(`⚠️ Database connection failed, retries left: ${retries}`);
+                    if (retries === 0) {
+                        console.log('⚠️ Starting server without database connection');
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                }
+            }
             
             // Verify required tables exist
             const tables = await this.db.query(`
