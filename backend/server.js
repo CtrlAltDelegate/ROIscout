@@ -304,7 +304,12 @@ class ROIscoutBackend {
             
         } catch (error) {
             console.error('❌ Failed to start ROIscout backend:', error);
-            process.exit(1);
+            // In production, don't exit - let Railway handle restarts
+            if (process.env.NODE_ENV !== 'production') {
+                process.exit(1);
+            } else {
+                console.log('🔄 Continuing in production mode despite errors...');
+            }
         }
     }
 

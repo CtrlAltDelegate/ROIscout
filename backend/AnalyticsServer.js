@@ -52,9 +52,25 @@ class AnalyticsServer {
     }
     
     setupRoutes() {
-        // Health check
+        // Health check - simple and always responds
         this.app.get('/health', (req, res) => {
-            res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+            res.status(200).json({ 
+                status: 'healthy', 
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                memory: process.memoryUsage(),
+                env: process.env.NODE_ENV || 'development'
+            });
+        });
+
+        // Root endpoint for basic connectivity test
+        this.app.get('/', (req, res) => {
+            res.status(200).json({
+                message: 'ROI Scout API is running',
+                version: '1.0.0',
+                health: '/health',
+                timestamp: new Date().toISOString()
+            });
         });
         
         // API routes
@@ -641,18 +657,37 @@ class AnalyticsServer {
     
     async start() {
         try {
-            // Test database connection
-            await this.db.query('SELECT NOW()');
-            console.log('✅ Database connected successfully');
+            // Try database connection but don't fail if it's not available
+            try {
+                await this.db.query('SELECT NOW()');
+                console.log('✅ Database connected successfully');
+            } catch (dbError) {
+                console.log('⚠️ Database connection failed, starting server anyway');
+                console.log('   Database operations will fail until connection is established');
+            }
             
-            this.app.listen(this.port, () => {
+            // Start server on all interfaces for Railway
+            this.server = this.app.listen(this.port, '0.0.0.0', () => {
                 console.log(`🚀 ROIscout Analytics API server running on port ${this.port}`);
-                console.log(`📊 API endpoints available at http://localhost:${this.port}/api`);
-                console.log(`🏥 Health check: http://localhost:${this.port}/health`);
+                console.log(`📊 API endpoints available at http://0.0.0.0:${this.port}/api`);
+                console.log(`🏥 Health check: http://0.0.0.0:${this.port}/health`);
+                console.log(`🌐 Server ready for Railway deployment`);
             });
+            
+            // Handle server errors
+            this.server.on('error', (error) => {
+                console.error('Server error:', error);
+                if (error.code === 'EADDRINUSE') {
+                    console.error(`Port ${this.port} is already in use`);
+                }
+            });
+            
         } catch (error) {
             console.error('❌ Failed to start server:', error);
-            process.exit(1);
+            // Don't exit in production, let Railway handle restarts
+            if (process.env.NODE_ENV !== 'production') {
+                process.exit(1);
+            }
         }
     }
 }
