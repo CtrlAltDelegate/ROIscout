@@ -13,7 +13,7 @@ require('dotenv').config();
 class AnalyticsServer {
     constructor() {
         this.app = express();
-        this.port = process.env.PORT || 3000;
+        this.port = process.env.PORT || 5000;
         
         // Database connection
         this.db = new Pool({
