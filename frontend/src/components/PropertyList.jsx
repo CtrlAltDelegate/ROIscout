@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Star, TrendingUp, MapPin, ArrowUpDown, ArrowUp, ArrowDown, Eye, Heart } from 'lucide-react';
+import { Search, Filter, Download, Star, TrendingUp, MapPin, ArrowUpDown, ArrowUp, ArrowDown, Eye, Heart, FileText, Share2, Copy } from 'lucide-react';
 
 const PropertyList = () => {
   const [properties, setProperties] = useState([]);
@@ -16,6 +16,19 @@ const PropertyList = () => {
     zipCode: ''
   });
   const [favorites, setFavorites] = useState(new Set());
+
+  // Load favorites from localStorage on component mount
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('roiscout-favorites');
+    if (savedFavorites) {
+      try {
+        const favoritesArray = JSON.parse(savedFavorites);
+        setFavorites(new Set(favoritesArray));
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      }
+    }
+  }, []);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -153,15 +166,31 @@ const PropertyList = () => {
       } else {
         newFavorites.add(propertyId);
       }
+      
+      // Save to localStorage
+      localStorage.setItem('roiscout-favorites', JSON.stringify([...newFavorites]));
+      
       return newFavorites;
     });
   };
 
-  const exportToCSV = () => {
+  const clearAllFavorites = () => {
+    setFavorites(new Set());
+    localStorage.removeItem('roiscout-favorites');
+  };
+
+  const exportFavorites = () => {
+    const favoriteProperties = filteredProperties.filter(prop => favorites.has(prop.id));
+    
+    if (favoriteProperties.length === 0) {
+      alert('No favorite properties to export.');
+      return;
+    }
+
     const headers = ['Address', 'City', 'State', 'Zip', 'List Price', 'Est Rent', 'Ratio %', 'Bedrooms', 'Bathrooms', 'Sq Ft', 'Type'];
     const csvContent = [
       headers.join(','),
-      ...filteredProperties.map(prop => [
+      ...favoriteProperties.map(prop => [
         `"${prop.address}"`,
         prop.city,
         prop.state,
@@ -180,9 +209,122 @@ const PropertyList = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `roiscout-properties-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `roiscout-favorites-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const generateShareLink = () => {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams();
+    
+    // Add current filters to share link
+    Object.keys(filters).forEach(key => {
+      if (filters[key]) {
+        params.append(key, filters[key]);
+      }
+    });
+    
+    if (searchTerm) {
+      params.append('search', searchTerm);
+    }
+    
+    const shareUrl = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert('Share link copied to clipboard!');
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Share link copied to clipboard!');
+    });
+  };
+
+  // Load filters from URL on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFilters = {};
+    const urlSearch = urlParams.get('search');
+    
+    // Load filters from URL
+    Object.keys(filters).forEach(key => {
+      const value = urlParams.get(key);
+      if (value) {
+        urlFilters[key] = value;
+      }
+    });
+    
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(prev => ({ ...prev, ...urlFilters }));
+    }
+    
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
+    }
+  }, []);
+
+  const exportToCSV = async () => {
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${API_BASE_URL}/export/csv`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(filters)
+      });
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `roiscout-properties-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('CSV export error:', error);
+      alert('Failed to export CSV. Please try again.');
+    }
+  };
+
+  const exportToPDF = async () => {
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${API_BASE_URL}/export/pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(filters)
+      });
+
+      if (!response.ok) {
+        throw new Error('PDF export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `roiscout-report-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('Failed to export PDF. Please try again.');
+    }
   };
 
   const getRatioColorClass = (ratio) => {
@@ -222,6 +364,38 @@ const PropertyList = () => {
             >
               <Download size={16} />
               Export CSV
+            </button>
+            <button
+              onClick={exportToPDF}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+            >
+              <FileText size={16} />
+              Export PDF
+            </button>
+            {favorites.size > 0 && (
+              <>
+                <button
+                  onClick={exportFavorites}
+                  className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors text-sm font-medium"
+                >
+                  <Heart size={16} />
+                  Export Favorites ({favorites.size})
+                </button>
+                <button
+                  onClick={clearAllFavorites}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
+                >
+                  Clear Favorites
+                </button>
+              </>
+            )}
+            <button
+              onClick={generateShareLink}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+              title="Share current search and filters"
+            >
+              <Share2 size={16} />
+              Share Search
             </button>
           </div>
         </div>

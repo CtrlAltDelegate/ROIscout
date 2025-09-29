@@ -587,22 +587,64 @@ class AnalyticsServer {
                     SELECT 
                         address, city, state, zip_code, property_type,
                         bedrooms, bathrooms, square_feet,
-                        list_price_dollars as "List Price",
-                        estimated_rent_dollars as "Est. Monthly Rent",
+                        list_price as "List Price",
+                        estimated_rent as "Est. Monthly Rent",
                         price_to_rent_ratio as "Price-to-Rent Ratio %",
                         cap_rate as "Cap Rate %",
-                        gross_rent_multiplier as "Gross Rent Multiplier",
-                        ratio_vs_market_percent as "vs Market %",
                         data_source as "Data Source",
                         last_updated as "Last Updated"
-                    FROM property_analytics
-                    WHERE 1=1
+                    FROM properties
+                    WHERE is_active = true
                 `;
                 
-                // Apply same filters as search endpoint
-                // (Implementation would be similar to property search)
+                // Apply filters if provided
+                const conditions = [];
+                const params = [];
+                let paramCount = 0;
+
+                if (filters.zipCode) {
+                    paramCount++;
+                    conditions.push(`zip_code = $${paramCount}`);
+                    params.push(filters.zipCode);
+                }
+
+                if (filters.city) {
+                    paramCount++;
+                    conditions.push(`city ILIKE $${paramCount}`);
+                    params.push(`%${filters.city}%`);
+                }
+
+                if (filters.state) {
+                    paramCount++;
+                    conditions.push(`state = $${paramCount}`);
+                    params.push(filters.state.toUpperCase());
+                }
+
+                if (filters.minPrice) {
+                    paramCount++;
+                    conditions.push(`list_price >= $${paramCount}`);
+                    params.push(filters.minPrice);
+                }
+
+                if (filters.maxPrice) {
+                    paramCount++;
+                    conditions.push(`list_price <= $${paramCount}`);
+                    params.push(filters.maxPrice);
+                }
+
+                if (filters.propertyType) {
+                    paramCount++;
+                    conditions.push(`property_type = $${paramCount}`);
+                    params.push(filters.propertyType);
+                }
+
+                if (conditions.length > 0) {
+                    query += ' AND ' + conditions.join(' AND ');
+                }
+
+                query += ' ORDER BY price_to_rent_ratio DESC LIMIT 1000';
                 
-                const result = await this.db.query(query);
+                const result = await this.db.query(query, params);
                 
                 // Convert to CSV format
                 const csv = this.convertToCSV(result.rows);
@@ -614,6 +656,78 @@ class AnalyticsServer {
             } catch (error) {
                 console.error('CSV export error:', error);
                 res.status(500).json({ error: 'Failed to export CSV' });
+            }
+        });
+
+        // POST /api/export/pdf - Export filtered results as PDF
+        router.post('/pdf', async (req, res) => {
+            try {
+                const filters = req.body;
+                
+                // Same query as CSV export
+                let query = `
+                    SELECT 
+                        address, city, state, zip_code, property_type,
+                        bedrooms, bathrooms, square_feet,
+                        list_price, estimated_rent, price_to_rent_ratio,
+                        cap_rate, data_source, last_updated
+                    FROM properties
+                    WHERE is_active = true
+                `;
+                
+                // Apply filters (same logic as CSV)
+                const conditions = [];
+                const params = [];
+                let paramCount = 0;
+
+                if (filters.zipCode) {
+                    paramCount++;
+                    conditions.push(`zip_code = $${paramCount}`);
+                    params.push(filters.zipCode);
+                }
+
+                if (filters.city) {
+                    paramCount++;
+                    conditions.push(`city ILIKE $${paramCount}`);
+                    params.push(`%${filters.city}%`);
+                }
+
+                if (filters.state) {
+                    paramCount++;
+                    conditions.push(`state = $${paramCount}`);
+                    params.push(filters.state.toUpperCase());
+                }
+
+                if (filters.minPrice) {
+                    paramCount++;
+                    conditions.push(`list_price >= $${paramCount}`);
+                    params.push(filters.minPrice);
+                }
+
+                if (filters.maxPrice) {
+                    paramCount++;
+                    conditions.push(`list_price <= $${paramCount}`);
+                    params.push(filters.maxPrice);
+                }
+
+                if (conditions.length > 0) {
+                    query += ' AND ' + conditions.join(' AND ');
+                }
+
+                query += ' ORDER BY price_to_rent_ratio DESC LIMIT 100'; // Limit for PDF
+                
+                const result = await this.db.query(query, params);
+                
+                // Generate PDF
+                const pdf = await this.generatePDF(result.rows, filters);
+                
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename="roiscout-report-${Date.now()}.pdf"`);
+                res.send(pdf);
+                
+            } catch (error) {
+                console.error('PDF export error:', error);
+                res.status(500).json({ error: 'Failed to export PDF' });
             }
         });
         
@@ -637,6 +751,113 @@ class AnalyticsServer {
         ].join('\n');
         
         return csvContent;
+    }
+
+    async generatePDF(data, filters) {
+        const htmlPdf = require('html-pdf-node');
+        
+        // Create HTML content for PDF
+        const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>ROI Scout Property Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .header h1 { color: #10b981; margin: 0; }
+                .header p { color: #666; margin: 5px 0; }
+                .filters { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+                .filters h3 { margin-top: 0; color: #333; }
+                .filters p { margin: 5px 0; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+                th { background-color: #10b981; color: white; }
+                tr:nth-child(even) { background-color: #f2f2f2; }
+                .ratio-high { color: #059669; font-weight: bold; }
+                .ratio-medium { color: #d97706; }
+                .ratio-low { color: #dc2626; }
+                .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>ROI Scout</h1>
+                <p>Property Investment Analysis Report</p>
+                <p>Generated on ${new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <div class="filters">
+                <h3>Search Criteria</h3>
+                ${filters.zipCode ? `<p><strong>Zip Code:</strong> ${filters.zipCode}</p>` : ''}
+                ${filters.city ? `<p><strong>City:</strong> ${filters.city}</p>` : ''}
+                ${filters.state ? `<p><strong>State:</strong> ${filters.state}</p>` : ''}
+                ${filters.minPrice ? `<p><strong>Min Price:</strong> $${parseInt(filters.minPrice).toLocaleString()}</p>` : ''}
+                ${filters.maxPrice ? `<p><strong>Max Price:</strong> $${parseInt(filters.maxPrice).toLocaleString()}</p>` : ''}
+                ${filters.propertyType ? `<p><strong>Property Type:</strong> ${filters.propertyType}</p>` : ''}
+                <p><strong>Total Properties:</strong> ${data.length}</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Address</th>
+                        <th>City, State</th>
+                        <th>List Price</th>
+                        <th>Est. Rent</th>
+                        <th>Ratio %</th>
+                        <th>Cap Rate</th>
+                        <th>Beds/Baths</th>
+                        <th>Sq Ft</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.map(property => `
+                        <tr>
+                            <td>${property.address}</td>
+                            <td>${property.city}, ${property.state} ${property.zip_code}</td>
+                            <td>$${parseInt(property.list_price).toLocaleString()}</td>
+                            <td>$${parseInt(property.estimated_rent).toLocaleString()}</td>
+                            <td class="${this.getRatioClass(property.price_to_rent_ratio)}">${parseFloat(property.price_to_rent_ratio).toFixed(2)}%</td>
+                            <td>${parseFloat(property.cap_rate).toFixed(1)}%</td>
+                            <td>${property.bedrooms}/${property.bathrooms}</td>
+                            <td>${parseInt(property.square_feet).toLocaleString()}</td>
+                            <td>${property.property_type}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <p>Report generated by ROI Scout - Real Estate Investment Analysis Platform</p>
+                <p>Data sources: ${[...new Set(data.map(p => p.data_source))].join(', ')}</p>
+            </div>
+        </body>
+        </html>
+        `;
+
+        const options = {
+            format: 'A4',
+            margin: {
+                top: '20mm',
+                bottom: '20mm',
+                left: '15mm',
+                right: '15mm'
+            }
+        };
+
+        const file = { content: html };
+        const pdfBuffer = await htmlPdf.generatePdf(file, options);
+        return pdfBuffer;
+    }
+
+    getRatioClass(ratio) {
+        const r = parseFloat(ratio);
+        if (r >= 6) return 'ratio-high';
+        if (r >= 4) return 'ratio-medium';
+        return 'ratio-low';
     }
     
     setupErrorHandling() {
