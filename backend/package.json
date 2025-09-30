@@ -23,6 +23,8 @@
   "author": "ROIscout Team",
   "license": "MIT",
   "dependencies": {
+    "@sentry/integrations": "^7.114.0",
+    "@sentry/node": "^10.17.0",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.0.0-rc.12",

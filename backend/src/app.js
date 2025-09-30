@@ -3,8 +3,14 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+// Initialize Sentry first
+const { initSentry, getSentryMiddleware } = require('./config/sentry');
+initSentry();
+
+// Import middleware
+const { adaptiveRateLimiter, authLimiter, searchLimiter, exportLimiter } = require('./middleware/rateLimiting');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -13,8 +19,14 @@ const searchRoutes = require('./routes/search');
 const stripeRoutes = require('./routes/stripe');
 const usageRoutes = require('./routes/usage');
 const adminRoutes = require('./routes/admin');
+const healthRoutes = require('./routes/health');
 
 const app = express();
+
+// Sentry middleware (must be first)
+const sentryMiddleware = getSentryMiddleware();
+app.use(sentryMiddleware.requestHandler);
+app.use(sentryMiddleware.tracingHandler);
 
 // Security middleware
 app.use(helmet({
@@ -45,15 +57,8 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-  },
-});
-app.use('/api/', limiter);
+// Rate limiting - adaptive based on user subscription
+app.use('/api/', adaptiveRateLimiter);
 
 // Logging
 if (process.env.NODE_ENV !== 'test') {
@@ -65,20 +70,14 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
+// Health check routes
+app.use('/health', healthRoutes);
 
-// API routes
-app.use('/api/auth', authRoutes);
+// API routes with specific rate limiting
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/data', dataRoutes);
-app.use('/api/searches', searchRoutes);
+app.use('/api/searches', searchLimiter, searchRoutes);
+app.use('/api/export', exportLimiter); // Will be added when we create export routes
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/admin', adminRoutes);
@@ -100,6 +99,9 @@ app.use('*', (req, res) => {
     message: `Cannot ${req.method} ${req.originalUrl}`,
   });
 });
+
+// Sentry error handler (must be before other error handlers)
+app.use(sentryMiddleware.errorHandler);
 
 // Global error handler
 app.use((err, req, res, next) => {
