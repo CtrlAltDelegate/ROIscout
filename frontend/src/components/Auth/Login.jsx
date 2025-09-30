@@ -34,6 +34,21 @@ const Login = ({ onLogin }) => {
     }
   };
 
+  const handleGoogleLogin = React.useCallback(async (response) => {
+    setGoogleLoading(true);
+    setError('');
+
+    try {
+      const result = await authService.googleLogin(response.credential);
+      localStorage.setItem('token', result.token);
+      onLogin(result.user);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Google login failed');
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [onLogin]);
+
   // Load Google Identity Services
   useEffect(() => {
     const script = document.createElement('script');
@@ -57,21 +72,6 @@ const Login = ({ onLogin }) => {
       }
     };
   }, [handleGoogleLogin]);
-
-  const handleGoogleLogin = React.useCallback(async (response) => {
-    setGoogleLoading(true);
-    setError('');
-
-    try {
-      const result = await authService.googleLogin(response.credential);
-      localStorage.setItem('token', result.token);
-      onLogin(result.user);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Google login failed');
-    } finally {
-      setGoogleLoading(false);
-    }
-  }, [onLogin]);
 
   const handleGoogleButtonClick = () => {
     if (window.google) {
