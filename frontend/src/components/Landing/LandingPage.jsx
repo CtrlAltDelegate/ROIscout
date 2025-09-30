@@ -11,10 +11,7 @@ import {
   CheckCircle,
   Target,
   Zap,
-  Shield,
-  Clock,
-  Mail,
-  ChevronDown
+  Mail
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -53,7 +50,7 @@ const LandingPage = () => {
     }, stepTime);
 
     return () => clearInterval(timer);
-  }, []);
+  }, []); // Empty dependency array is correct - we only want this to run once on mount
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
