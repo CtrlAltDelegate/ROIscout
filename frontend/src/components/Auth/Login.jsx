@@ -52,11 +52,13 @@ const Login = ({ onLogin }) => {
     };
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
-  }, []);
+  }, [handleGoogleLogin]);
 
-  const handleGoogleLogin = async (response) => {
+  const handleGoogleLogin = React.useCallback(async (response) => {
     setGoogleLoading(true);
     setError('');
 
@@ -69,7 +71,7 @@ const Login = ({ onLogin }) => {
     } finally {
       setGoogleLoading(false);
     }
-  };
+  }, [onLogin]);
 
   const handleGoogleButtonClick = () => {
     if (window.google) {

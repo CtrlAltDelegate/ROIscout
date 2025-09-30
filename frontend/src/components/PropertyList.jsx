@@ -253,7 +253,8 @@ const PropertyList = () => {
     const urlSearch = urlParams.get('search');
     
     // Load filters from URL
-    Object.keys(filters).forEach(key => {
+    const filterKeys = ['minPrice', 'maxPrice', 'minRatio', 'maxRatio', 'bedrooms', 'propertyType', 'zipCode'];
+    filterKeys.forEach(key => {
       const value = urlParams.get(key);
       if (value) {
         urlFilters[key] = value;
@@ -267,7 +268,7 @@ const PropertyList = () => {
     if (urlSearch) {
       setSearchTerm(urlSearch);
     }
-  }, []);
+  }, []); // Empty dependency array is correct here - we only want this to run once on mount
 
   const exportToCSV = async () => {
     try {
