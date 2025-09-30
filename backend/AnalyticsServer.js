@@ -8,6 +8,9 @@ const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
 const { Pool } = require('pg');
+const usageService = require('./src/services/usageService');
+const cacheService = require('./src/services/cacheService');
+const { optionalAuth } = require('./src/middleware/auth');
 require('dotenv').config();
 
 class AnalyticsServer {
@@ -84,7 +87,15 @@ class AnalyticsServer {
         const router = express.Router();
         
         // GET /api/properties - Search properties with filters
-        router.get('/', async (req, res) => {
+        router.get('/', 
+            optionalAuth,
+            usageService.checkLimitMiddleware('property_search'),
+            cacheService.middleware((req) => cacheService.generatePropertySearchKey(req.query), 600), // 10 min cache
+            usageService.trackUsageMiddleware('property_search', (req, data) => ({
+                filters: req.query,
+                resultCount: data.properties?.length || 0
+            })),
+            async (req, res) => {
             try {
                 const {
                     zip_code,
@@ -307,7 +318,9 @@ class AnalyticsServer {
         const router = express.Router();
         
         // GET /api/analytics/market-summary - Market statistics
-        router.get('/market-summary', async (req, res) => {
+        router.get('/market-summary', 
+            cacheService.middleware((req) => cacheService.generateAnalyticsKey('market-summary', req.query), 1800), // 30 min cache
+            async (req, res) => {
             try {
                 const { zip_code, city, state } = req.query;
                 
@@ -577,7 +590,14 @@ class AnalyticsServer {
         const router = express.Router();
         
         // POST /api/export/csv - Export filtered results as CSV
-        router.post('/csv', async (req, res) => {
+        router.post('/csv',
+            optionalAuth,
+            usageService.checkLimitMiddleware('export_csv'),
+            usageService.trackUsageMiddleware('export_csv', (req, data) => ({
+                filters: req.body,
+                exportType: 'csv'
+            })),
+            async (req, res) => {
             try {
                 const filters = req.body;
                 
@@ -660,7 +680,14 @@ class AnalyticsServer {
         });
 
         // POST /api/export/pdf - Export filtered results as PDF
-        router.post('/pdf', async (req, res) => {
+        router.post('/pdf',
+            optionalAuth,
+            usageService.checkLimitMiddleware('export_pdf'),
+            usageService.trackUsageMiddleware('export_pdf', (req, data) => ({
+                filters: req.body,
+                exportType: 'pdf'
+            })),
+            async (req, res) => {
             try {
                 const filters = req.body;
                 

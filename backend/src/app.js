@@ -10,6 +10,9 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
 const searchRoutes = require('./routes/search');
+const stripeRoutes = require('./routes/stripe');
+const usageRoutes = require('./routes/usage');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -76,6 +79,9 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/searches', searchRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/usage', usageRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

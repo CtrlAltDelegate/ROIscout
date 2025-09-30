@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: roiscout-postgres
+    environment:
+      POSTGRES_DB: roi_scout
+      POSTGRES_USER: roiscout
+      POSTGRES_PASSWORD: roiscout_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - roiscout-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roiscout -d roi_scout"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: roiscout-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - roiscout-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: roiscout-backend
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DATABASE_URL: postgresql://roiscout:roiscout_password@postgres:5432/roi_scout
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-key-change-in-production
+      JWT_EXPIRES_IN: 7d
+      BCRYPT_SALT_ROUNDS: 12
+      # Add your API keys here
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      REALTOR_API_KEY: ${REALTOR_API_KEY}
+      RENTSPREE_API_KEY: ${RENTSPREE_API_KEY}
+      BRIDGE_API_KEY: ${BRIDGE_API_KEY}
+      FRONTEND_URL: http://localhost:3000
+      ADMIN_EMAILS: admin@roiscout.com
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - roiscout-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Frontend (for development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: roiscout-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      REACT_APP_STRIPE_PUBLISHABLE_KEY: ${REACT_APP_STRIPE_PUBLISHABLE_KEY}
+      REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID}
+      REACT_APP_MAPBOX_TOKEN: ${REACT_APP_MAPBOX_TOKEN}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - roiscout-network
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+
+  # Nginx Reverse Proxy (optional, for production-like setup)
+  nginx:
+    image: nginx:alpine
+    container_name: roiscout-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - roiscout-network
+    depends_on:
+      - backend
+      - frontend
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  roiscout-network:
+    driver: bridge

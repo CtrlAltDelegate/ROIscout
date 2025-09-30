@@ -20,6 +20,11 @@ export const authService = {
     return response.data;
   },
 
+  async googleLogin(token) {
+    const response = await authClient.post('/auth/google', { token });
+    return response.data;
+  },
+
   async verifyToken() {
     const token = localStorage.getItem('token');
     if (!token) {

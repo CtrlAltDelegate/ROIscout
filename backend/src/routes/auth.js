@@ -14,4 +14,7 @@ router.post('/login', validateLogin, authController.login);
 // GET /api/auth/profile - Get user profile (protected)
 router.get('/profile', authenticateToken, authController.getProfile);
 
+// POST /api/auth/google - Google OAuth login
+router.post('/google', authController.googleLogin);
+
 module.exports = router;

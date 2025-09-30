@@ -276,8 +276,12 @@ class ROIscoutBackend {
                 console.log('   node scripts/ingest-data.js --mock-data true');
             }
             
-            // Start the server
-            await this.server.start();
+        // Start database optimization service
+        const dbOptimizationService = require('./src/services/dbOptimizationService');
+        dbOptimizationService.start();
+
+        // Start the server
+        await this.server.start();
             
             console.log('\n🎯 Available API Endpoints:');
             console.log('===========================');
