@@ -1,5 +1,6 @@
 // src/config/sentry.js
 import * as Sentry from '@sentry/react';
+import { BrowserTracing } from '@sentry/tracing';
 
 export const initSentry = () => {
   // Only initialize Sentry in production or if SENTRY_DSN is provided
@@ -9,22 +10,13 @@ export const initSentry = () => {
       environment: process.env.NODE_ENV,
       tracesSampleRate: 0.1,
       integrations: [
-        new Sentry.BrowserTracing(),
+        new BrowserTracing(),
       ],
     });
   }
 };
 
 export const SentryErrorBoundary = ({ children, fallback }) => {
-  // If Sentry is not initialized, use a simple error boundary
-  if (process.env.NODE_ENV !== 'production' || !process.env.REACT_APP_SENTRY_DSN) {
-    return (
-      <div>
-        {children}
-      </div>
-    );
-  }
-
   return (
     <Sentry.ErrorBoundary fallback={fallback}>
       {children}
