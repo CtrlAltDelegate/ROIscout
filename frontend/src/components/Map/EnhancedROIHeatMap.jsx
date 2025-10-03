@@ -87,7 +87,7 @@ const EnhancedROIHeatMap = () => {
     return { label: 'POOR', icon: '📉' };
   };
 
-  // Fetch properties from API
+  // Fetch properties from API with API call conservation
   const fetchProperties = async (searchFilters = {}) => {
     setLoading(true);
     try {
@@ -98,7 +98,23 @@ const EnhancedROIHeatMap = () => {
       }
       const API_BASE_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
       
-      // Build query parameters
+      // 🎯 FOCUS AREAS - Limit to specific high-opportunity markets
+      const focusAreas = {
+        // Texas markets (good ROI potential)
+        texas: ['78701', '78702', '78703', '78704', '78705'], // Austin
+        // Add more as needed
+        // florida: ['33101', '33102', '33103'], // Miami
+        // georgia: ['30309', '30310', '30311']  // Atlanta
+      };
+      
+      // If no specific area selected, default to Austin focus area
+      if (!searchFilters.zipCode && !searchFilters.city) {
+        searchFilters.state = 'TX';
+        searchFilters.city = 'Austin';
+        console.log('🎯 Using focus area: Austin, TX (API conservation mode)');
+      }
+      
+      // Build query parameters with API conservation
       const params = new URLSearchParams();
       Object.keys(searchFilters).forEach(key => {
         if (searchFilters[key]) {
@@ -106,7 +122,11 @@ const EnhancedROIHeatMap = () => {
         }
       });
       
-      const response = await fetch(`${API_BASE_URL}/properties?${params}&limit=100`);
+      // Limit API calls - smaller batches for real API, larger for sample data
+      const apiLimit = 25; // Conservative limit to preserve API calls
+      params.append('limit', apiLimit);
+      
+      const response = await fetch(`${API_BASE_URL}/properties?${params}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -160,13 +180,15 @@ const EnhancedROIHeatMap = () => {
     }
   };
 
-  // Generate sample properties for development
+  // Generate sample properties for development - Austin focused
   const generateSampleProperties = () => {
     const sampleData = [];
-    const cities = ['Austin', 'Dallas', 'Houston', 'San Antonio', 'Fort Worth'];
+    // Focus on Austin neighborhoods for API conservation
+    const austinNeighborhoods = ['Downtown', 'South Austin', 'East Austin', 'North Austin', 'West Austin'];
+    const austinZipCodes = ['78701', '78702', '78703', '78704', '78705', '78731', '78732', '78733', '78734', '78735'];
     const propertyTypes = ['Single Family', 'Condo', 'Townhouse', 'Multi-Family'];
     
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 30; i++) { // Reduced from 50 to 30
       const listPrice = 150000 + Math.random() * 400000;
       const estimatedRent = listPrice * (0.008 + Math.random() * 0.004); // 0.8% to 1.2% monthly
       const priceToRentRatio = (estimatedRent * 12 / listPrice) * 100;
@@ -174,10 +196,10 @@ const EnhancedROIHeatMap = () => {
       
       const property = {
         id: i + 1,
-        address: `${1000 + i} Sample St`,
-        city: cities[Math.floor(Math.random() * cities.length)],
+        address: `${1000 + i} ${austinNeighborhoods[Math.floor(Math.random() * austinNeighborhoods.length)]} St`,
+        city: 'Austin',
         state: 'TX',
-        zipCode: `7${String(Math.floor(Math.random() * 9000) + 1000)}`,
+        zipCode: austinZipCodes[Math.floor(Math.random() * austinZipCodes.length)],
         latitude: 30.2672 + (Math.random() - 0.5) * 2,
         longitude: -97.7431 + (Math.random() - 0.5) * 2,
         listPrice: Math.round(listPrice),
@@ -269,7 +291,7 @@ const EnhancedROIHeatMap = () => {
               ROI Heat Map
             </h2>
             <p className="text-blue-100 mt-1">
-              {filteredProperties.length} properties • Sized by ROI potential
+              {filteredProperties.length} properties • Focus: Austin, TX • API Conservation Mode
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -308,9 +330,29 @@ const EnhancedROIHeatMap = () => {
         </div>
       </div>
 
+      {/* API Conservation Notice */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <Zap className="h-5 w-5 text-yellow-400" />
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              <strong>API Conservation Mode:</strong> Focused on Austin, TX to preserve RentCast API calls (50 free/month, then $0.20 each). 
+              <span className="font-medium"> Showing 25 properties max per search.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Filters Panel */}
       {showFilters && (
         <div className="bg-gray-50 p-4 border-b">
+          <div className="mb-3">
+            <p className="text-sm text-gray-600 mb-2">
+              💡 <strong>Tip:</strong> Use specific zip codes (78701-78735) for Austin properties to get the most relevant results.
+            </p>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <input
               type="text"
