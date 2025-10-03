@@ -9,10 +9,10 @@ class RealEstateDataService {
     // API configurations
     this.apis = {
       // Primary property data sources
-      rentspider: {
-        baseUrl: 'https://api.rentspider.com/v1',
-        key: process.env.RENTSPIDER_API_KEY,
-        enabled: !!process.env.RENTSPIDER_API_KEY
+      rentcast: {
+        baseUrl: 'https://api.rentcast.io/v1',
+        key: process.env.RENTCAST_API_KEY,
+        enabled: !!process.env.RENTCAST_API_KEY
       },
       
       // Alternative rental data sources
@@ -108,15 +108,15 @@ class RealEstateDataService {
   async getRentalEstimate(address, city, state, zipCode, bedrooms, bathrooms, squareFeet) {
     const estimates = [];
 
-    // Try RentSpider API
-    if (this.apis.rentspider.enabled) {
+    // Try RentCast API
+    if (this.apis.rentcast.enabled) {
       try {
-        const rentSpiderEstimate = await this.fetchRentSpiderData({
+        const rentCastEstimate = await this.fetchRentCastData({
           address, city, state, zipCode, bedrooms, bathrooms, squareFeet
         });
-        if (rentSpiderEstimate) estimates.push(rentSpiderEstimate);
+        if (rentCastEstimate) estimates.push(rentCastEstimate);
       } catch (error) {
-        console.error('RentSpider API error:', error);
+        console.error('RentCast API error:', error);
       }
     }
 
@@ -145,11 +145,22 @@ class RealEstateDataService {
   }
 
   /**
-   * Fetch property listings from Bridge API (MLS alternative)
+   * Fetch property listings from RentCast or Bridge API
    */
   async fetchPropertyListings(filters = {}) {
+    // Try RentCast first (has 140M+ properties)
+    if (this.apis.rentcast.enabled) {
+      try {
+        return await this.fetchRentCastProperties(filters);
+      } catch (error) {
+        console.error('RentCast properties error:', error);
+        // Fall through to Bridge API or sample data
+      }
+    }
+
+    // Fallback to Bridge API
     if (!this.apis.bridgeApi.enabled) {
-      console.log('Bridge API not configured, using sample data');
+      console.log('No property APIs configured, using sample data');
       return this.generateSamplePropertyData(filters);
     }
 
@@ -180,30 +191,109 @@ class RealEstateDataService {
   }
 
   /**
-   * RentSpider API integration
+   * RentCast API integration
    */
-  async fetchRentSpiderData(propertyData) {
-    const response = await axios.post(`${this.apis.rentspider.baseUrl}/rent-estimate`, {
-      address: propertyData.address,
-      city: propertyData.city,
-      state: propertyData.state,
-      zipCode: propertyData.zipCode,
-      bedrooms: propertyData.bedrooms,
-      bathrooms: propertyData.bathrooms,
-      squareFeet: propertyData.squareFeet
-    }, {
-      headers: {
-        'Authorization': `Bearer ${this.apis.rentspider.key}`,
-        'Content-Type': 'application/json'
-      }
-    });
+  async fetchRentCastData(propertyData) {
+    try {
+      // RentCast uses GET request with query parameters
+      const response = await axios.get(`${this.apis.rentcast.baseUrl}/avm/rent/long-term`, {
+        headers: {
+          'X-Api-Key': this.apis.rentcast.key,
+          'Content-Type': 'application/json'
+        },
+        params: {
+          address: propertyData.address,
+          city: propertyData.city,
+          state: propertyData.state,
+          zipCode: propertyData.zipCode,
+          bedrooms: propertyData.bedrooms,
+          bathrooms: propertyData.bathrooms,
+          squareFeet: propertyData.squareFeet,
+          propertyType: 'Single Family' // Default, can be made dynamic
+        }
+      });
 
-    return {
-      estimate: response.data.rentEstimate,
-      confidence: response.data.confidence,
-      source: 'RentSpider',
-      weight: 0.4
-    };
+      // RentCast returns rent estimate in response.rent
+      return {
+        estimate: Math.round(response.data.rent || 0),
+        confidence: response.data.confidence || 0.8,
+        source: 'RentCast',
+        weight: 0.5, // Higher weight as RentCast is very reliable
+        details: {
+          rentHigh: response.data.rentHigh,
+          rentLow: response.data.rentLow,
+          rentRangeLow: response.data.rentRangeLow,
+          rentRangeHigh: response.data.rentRangeHigh
+        }
+      };
+    } catch (error) {
+      console.error('RentCast API detailed error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * RentCast Property Search
+   */
+  async fetchRentCastProperties(filters = {}) {
+    try {
+      const response = await axios.get(`${this.apis.rentcast.baseUrl}/listings/rental`, {
+        headers: {
+          'X-Api-Key': this.apis.rentcast.key,
+          'Content-Type': 'application/json'
+        },
+        params: {
+          city: filters.city,
+          state: filters.state,
+          zipCode: filters.zipCode,
+          bedrooms: filters.bedrooms,
+          bathrooms: filters.bathrooms,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          propertyType: filters.propertyType,
+          limit: Math.min(filters.limit || 50, 100), // RentCast max is usually 100
+          status: 'Active'
+        }
+      });
+
+      return this.transformRentCastData(response.data);
+
+    } catch (error) {
+      console.error('RentCast properties API error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform RentCast data to our format
+   */
+  transformRentCastData(apiData) {
+    return apiData.listings?.map(listing => ({
+      id: listing.id || `rentcast_${listing.address?.replace(/\s+/g, '_')}`,
+      address: listing.address,
+      city: listing.city,
+      state: listing.state,
+      zipCode: listing.zipCode,
+      latitude: listing.latitude,
+      longitude: listing.longitude,
+      listPrice: listing.price || listing.listPrice,
+      estimatedRent: listing.rent || listing.estimatedRent,
+      bedrooms: listing.bedrooms,
+      bathrooms: listing.bathrooms,
+      squareFeet: listing.squareFeet,
+      propertyType: listing.propertyType || 'Single Family',
+      dataSource: 'RentCast',
+      lastUpdated: listing.lastSeen || new Date().toISOString(),
+      isActive: true,
+      // Additional RentCast specific data
+      rentCastData: {
+        confidence: listing.confidence,
+        rentHigh: listing.rentHigh,
+        rentLow: listing.rentLow,
+        pricePerSqFt: listing.pricePerSqFt,
+        daysOnMarket: listing.daysOnMarket
+      }
+    })) || [];
   }
 
   /**
