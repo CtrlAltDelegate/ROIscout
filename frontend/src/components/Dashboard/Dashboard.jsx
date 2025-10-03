@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BarChart3, Map, List, Bell, User, Search, TrendingUp, Home, DollarSign, Target, Star } from 'lucide-react';
+import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
 
 const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -119,8 +120,7 @@ const ROIscoutDashboard = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'map':
-        return <MapPlaceholder />;
-        // return <PropertyMap />; // Uncomment when component is imported
+        return <EnhancedROIHeatMap />;
       case 'list':
         return <ListPlaceholder />;
         // return <PropertyList />; // Uncomment when component is imported
