@@ -252,33 +252,42 @@ class ROIscoutBackend {
                 }
             }
             
-            // Verify required tables exist
-            const tables = await this.db.query(`
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name IN ('properties', 'rental_comps', 'market_data')
-            `);
-            
-            if (tables.rows.length < 3) {
-                console.log('⚠️ Warning: Some database tables may be missing');
-                console.log('   Run: node scripts/setup-database.js');
-            } else {
-                console.log('✅ Database tables verified');
+            // Verify required tables exist (optional - don't fail if DB unavailable)
+            try {
+                const tables = await this.db.query(`
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name IN ('properties', 'rental_comps', 'market_data')
+                `);
+                
+                if (tables.rows.length < 3) {
+                    console.log('⚠️ Warning: Some database tables may be missing');
+                    console.log('   Run: node scripts/setup-database.js');
+                } else {
+                    console.log('✅ Database tables verified');
+                }
+                
+                // Check for sample data
+                const propertyCount = await this.db.query('SELECT COUNT(*) FROM properties WHERE is_active = true');
+                console.log(`📊 Active properties in database: ${propertyCount.rows[0].count}`);
+                
+                if (propertyCount.rows[0].count === '0') {
+                    console.log('💡 No properties found. Run data ingestion:');
+                    console.log('   node scripts/ingest-data.js --mock-data true');
+                }
+            } catch (dbError) {
+                console.log('⚠️ Database verification skipped - will retry later');
+                console.log('   Database may still be initializing...');
             }
             
-            // Check for sample data
-            const propertyCount = await this.db.query('SELECT COUNT(*) FROM properties WHERE is_active = true');
-            console.log(`📊 Active properties in database: ${propertyCount.rows[0].count}`);
-            
-            if (propertyCount.rows[0].count === '0') {
-                console.log('💡 No properties found. Run data ingestion:');
-                console.log('   node scripts/ingest-data.js --mock-data true');
-            }
-            
-        // Start database optimization service
-        const dbOptimizationService = require('./src/services/dbOptimizationService');
-        dbOptimizationService.start();
+        // Start database optimization service (optional)
+        try {
+            const dbOptimizationService = require('./src/services/dbOptimizationService');
+            dbOptimizationService.start();
+        } catch (optError) {
+            console.log('⚠️ Database optimization service skipped');
+        }
 
         // Start the server
         await this.server.start();
