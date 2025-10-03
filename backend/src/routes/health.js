@@ -6,7 +6,7 @@ const dbOptimizationService = require('../services/dbOptimizationService');
 const router = express.Router();
 
 /**
- * Basic health check - always responds quickly
+ * Basic health check - always responds quickly (no DB dependency)
  */
 router.get('/', (req, res) => {
   res.json({
@@ -14,7 +14,8 @@ router.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0'
+    version: process.env.npm_package_version || '1.0.0',
+    message: 'Service is running'
   });
 });
 
