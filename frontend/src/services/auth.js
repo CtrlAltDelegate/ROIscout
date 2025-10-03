@@ -4,6 +4,12 @@ import axios from 'axios';
 const baseUrl = process.env.REACT_APP_API_URL || 'https://roiscout-production.up.railway.app';
 const API_BASE_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
+// Debug logging
+console.log('🔍 Auth Service Debug:');
+console.log('  REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+console.log('  baseUrl:', baseUrl);
+console.log('  Final API_BASE_URL:', API_BASE_URL);
+
 const authClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
