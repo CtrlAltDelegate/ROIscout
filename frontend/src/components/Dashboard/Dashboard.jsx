@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BarChart3, Map, List, Bell, User, Search, TrendingUp, Home, DollarSign, Target, Star } from 'lucide-react';
-import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
+import BasicROIMap from '../Map/BasicROIMap';
 
 const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -124,11 +124,11 @@ const ROIscoutDashboard = () => {
     console.log('🎯 Rendering tab content for:', activeTab);
     switch (activeTab) {
       case 'map':
-        console.log('🗺️ Loading EnhancedROIHeatMap component...');
+        console.log('🗺️ Loading BasicROIMap component...');
         try {
-          return <EnhancedROIHeatMap />;
+          return <BasicROIMap />;
         } catch (error) {
-          console.error('❌ Error loading EnhancedROIHeatMap:', error);
+          console.error('❌ Error loading BasicROIMap:', error);
           return (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <h3 className="text-red-800 font-semibold mb-2">Component Error</h3>
