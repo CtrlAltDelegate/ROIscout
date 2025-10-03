@@ -13,8 +13,7 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
     process.exit(1);
 });
-const AnalyticsServer = require('./AnalyticsServer');
-const AnalyticsUtils = require('./AnalyticsUtils');
+const app = require('./src/app');
 const { Pool } = require('pg');
 
 class ROIscoutBackend {
@@ -24,19 +23,15 @@ class ROIscoutBackend {
             ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
         });
         
-        this.analyticsUtils = new AnalyticsUtils(this.db);
-        this.server = new AnalyticsServer();
+        this.app = app;
+        this.port = process.env.PORT || 5000;
         
-        // Add analytics utilities to server for enhanced endpoints
-        this.server.analyticsUtils = this.analyticsUtils;
         this.setupEnhancedRoutes();
     }
 
     setupEnhancedRoutes() {
-        // Enhanced analytics endpoints using AnalyticsUtils
-        
-        // GET /api/analytics/property/:id/report - Comprehensive property analysis
-        this.server.app.get('/api/analytics/property/:id/report', async (req, res) => {
+        // All routes are now handled through app.js including auth and analytics
+        console.log('✅ All routes configured through app.js');
             try {
                 const { id } = req.params;
                 const report = await this.analyticsUtils.generatePropertyReport(id);
@@ -290,7 +285,11 @@ class ROIscoutBackend {
         }
 
         // Start the server
-        await this.server.start();
+        this.server = this.app.listen(this.port, () => {
+            console.log(`🚀 ROI Scout API server running on port ${this.port}`);
+            console.log(`📍 Health check: http://localhost:${this.port}/health`);
+            console.log(`🌐 API base URL: http://localhost:${this.port}/api`);
+        });
             
             console.log('\n🎯 Available API Endpoints:');
             console.log('===========================');
@@ -330,6 +329,13 @@ class ROIscoutBackend {
         console.log(`\n📝 Received ${signal}, starting graceful shutdown...`);
         
         try {
+            // Close server
+            if (this.server) {
+                this.server.close(() => {
+                    console.log('✅ HTTP server closed');
+                });
+            }
+            
             // Close database connections
             await this.db.end();
             console.log('✅ Database connections closed');
