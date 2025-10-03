@@ -31,7 +31,7 @@ app.get('/', (req, res) => {
 });
 
 // Load routes only after server starts
-let authRoutes, migrateRoutes;
+let authRoutes, migrateRoutes, testRoutes;
 try {
   authRoutes = require('./src/routes/auth');
   app.use('/api/auth', authRoutes);
@@ -46,6 +46,14 @@ try {
   console.log('✅ Migration routes loaded');
 } catch (error) {
   console.log('⚠️ Migration routes failed to load:', error.message);
+}
+
+try {
+  testRoutes = require('./src/routes/test-apis');
+  app.use('/api/test', testRoutes);
+  console.log('✅ API test routes loaded');
+} catch (error) {
+  console.log('⚠️ API test routes failed to load:', error.message);
 }
 
 // 404 handler
