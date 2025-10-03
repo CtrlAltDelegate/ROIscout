@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://roiscout-production.up.railway.app/api';
+// Ensure API_BASE_URL always ends with /api
+const baseUrl = process.env.REACT_APP_API_URL || 'https://roiscout-production.up.railway.app';
+const API_BASE_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
 const authClient = axios.create({
   baseURL: API_BASE_URL,
