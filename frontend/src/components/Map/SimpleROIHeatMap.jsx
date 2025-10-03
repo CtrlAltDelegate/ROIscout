@@ -76,7 +76,7 @@ const SimpleROIHeatMap = () => {
               ROI Heat Map
             </h2>
             <p className="text-blue-100 mt-1">
-              {properties.length} Austin properties • API Conservation Mode
+              {properties.length} Austin properties • API Conservation Mode • v2
             </p>
           </div>
           <div className="flex items-center gap-3">
