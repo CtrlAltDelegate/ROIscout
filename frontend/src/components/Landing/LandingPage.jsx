@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   MapPin, 
-  DollarSign, 
   BarChart3, 
   Users, 
   Star,
