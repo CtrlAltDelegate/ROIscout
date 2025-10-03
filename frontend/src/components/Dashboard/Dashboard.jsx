@@ -42,7 +42,10 @@ const ROIscoutDashboard = () => {
 
   const TabButton = ({ id, icon: Icon, label, isActive, onClick }) => (
     <button
-      onClick={() => onClick(id)}
+      onClick={() => {
+        console.log('🔘 Tab button clicked:', id, 'Current active:', activeTab);
+        onClick(id);
+      }}
       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
         isActive 
           ? 'bg-blue-500 text-white shadow-lg transform scale-105' 
@@ -118,9 +121,21 @@ const ROIscoutDashboard = () => {
   );
 
   const renderTabContent = () => {
+    console.log('🎯 Rendering tab content for:', activeTab);
     switch (activeTab) {
       case 'map':
-        return <EnhancedROIHeatMap />;
+        console.log('🗺️ Loading EnhancedROIHeatMap component...');
+        try {
+          return <EnhancedROIHeatMap />;
+        } catch (error) {
+          console.error('❌ Error loading EnhancedROIHeatMap:', error);
+          return (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h3 className="text-red-800 font-semibold mb-2">Component Error</h3>
+              <p className="text-red-600">Failed to load ROI Heat Map: {error.message}</p>
+            </div>
+          );
+        }
       case 'list':
         return <ListPlaceholder />;
         // return <PropertyList />; // Uncomment when component is imported
