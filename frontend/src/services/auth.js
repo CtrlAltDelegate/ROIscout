@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-// Ensure API_BASE_URL always ends with /api
-const baseUrl = process.env.REACT_APP_API_URL || 'https://roiscout-production.up.railway.app';
+// Ensure API_BASE_URL always has protocol and ends with /api
+let baseUrl = process.env.REACT_APP_API_URL || 'https://roiscout-production.up.railway.app';
+
+// Add https:// if missing
+if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+  baseUrl = `https://${baseUrl}`;
+}
+
 const API_BASE_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
 // Debug logging
