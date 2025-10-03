@@ -86,9 +86,9 @@ const ROIscoutDashboard = () => {
   const MapPlaceholder = () => (
     <div className="bg-white rounded-lg shadow-lg p-8 text-center">
       <Map size={64} className="mx-auto text-gray-400 mb-4" />
-      <h3 className="text-lg font-semibold text-gray-700 mb-2">Interactive Property Map</h3>
+      <h3 className="text-lg font-semibold text-gray-700 mb-2">ROI Heat Map</h3>
       <p className="text-gray-500 mb-4">
-        Visualize properties with price-to-rent ratios using heatmaps and interactive markers.
+        Visualize properties with ROI-based sizing and color-coded heat mapping for investment analysis.
       </p>
       <div className="bg-gray-50 rounded-lg p-4">
         <p className="text-sm text-gray-600">
@@ -286,7 +286,7 @@ const ROIscoutDashboard = () => {
             <TabButton
               id="map"
               icon={Map}
-              label="Property Map"
+              label="ROI Heat Map"
               isActive={activeTab === 'map'}
               onClick={setActiveTab}
             />
@@ -391,7 +391,7 @@ const ROIscoutDashboard = () => {
               <div className="flex items-center gap-4">
                 <span>Last updated: {new Date().toLocaleString()}</span>
                 <span>•</span>
-                <span>Data sources: Zillow, Redfin, MLS</span>
+                <span>Data sources: RentCast, FRED API, MLS</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
