@@ -8,7 +8,7 @@ import { initSentry, SentryErrorBoundary, setUser as setSentryUser } from './con
 
 // Components
 import Header from './components/Layout/Header';
-import LandingPage from './components/Landing/LandingPage';
+import SimpleLandingPage from './components/Landing/SimpleLandingPage';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -93,7 +93,7 @@ function App() {
           <Routes>
             <Route 
               path="/" 
-              element={user ? <Navigate to="/dashboard" /> : <LandingPage />} 
+              element={user ? <Navigate to="/dashboard" /> : <SimpleLandingPage />} 
             />
             <Route 
               path="/login" 

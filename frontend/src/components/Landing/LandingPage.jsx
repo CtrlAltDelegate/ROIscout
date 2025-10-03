@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  MapPin, 
-  BarChart3, 
-  Users, 
-  Star,
-  ArrowRight,
-  Play,
-  CheckCircle,
-  Target,
-  Zap,
-  Mail
-} from 'lucide-react';
+// Removed lucide-react imports - using emoji icons instead
 
 const LandingPage = () => {
   const [email, setEmail] = useState('');
