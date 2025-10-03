@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 // Components - testing one by one
 import Header from './components/Layout/Header';
 import SimpleLandingPage from './components/Landing/SimpleLandingPage';
-// import Login from './components/Auth/Login';
-// import Signup from './components/Auth/Signup';
-// import Dashboard from './components/Dashboard/Dashboard';
 
 // Services
 import { authService } from './services/auth';
@@ -34,10 +31,6 @@ function App() {
       setLoading(false);
     }
   }, []);
-
-  const handleLogin = (userData) => {
-    setUser(userData);
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
