@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Map, List, Bell, User, Search, TrendingUp, Home, DollarSign, Target, Star } from 'lucide-react';
+// Removed lucide-react imports - using emoji icons instead
 import BasicROIMap from '../Map/BasicROIMap';
 
 const ROIscoutDashboard = () => {
@@ -40,6 +40,16 @@ const ROIscoutDashboard = () => {
     }
   ];
 
+  const getIconEmoji = (id) => {
+    const iconMap = {
+      'map': '🗺️',
+      'list': '📋',
+      'analytics': '📊',
+      'saved': '⭐'
+    };
+    return iconMap[id] || '📍';
+  };
+
   const TabButton = ({ id, icon: Icon, label, isActive, onClick }) => (
     <button
       onClick={() => {
@@ -52,12 +62,12 @@ const ROIscoutDashboard = () => {
           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
       }`}
     >
-      <Icon size={20} />
+      <span style={{ fontSize: '20px' }}>{getIconEmoji(id)}</span>
       <span className="font-medium">{label}</span>
     </button>
   );
 
-  const StatCard = ({ icon: Icon, label, value, change, color = 'blue' }) => {
+  const StatCard = ({ icon, label, value, change, color = 'blue' }) => {
     const colorClasses = {
       blue: 'bg-blue-50 text-blue-600',
       green: 'bg-green-50 text-green-600',
@@ -78,7 +88,7 @@ const ROIscoutDashboard = () => {
             )}
           </div>
           <div className={`p-3 rounded-full ${colorClasses[color]}`}>
-            <Icon size={24} />
+            <span style={{ fontSize: '24px' }}>{icon}</span>
           </div>
         </div>
       </div>
@@ -88,7 +98,7 @@ const ROIscoutDashboard = () => {
   // Placeholder components for when the actual components aren't imported
   const MapPlaceholder = () => (
     <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-      <Map size={64} className="mx-auto text-gray-400 mb-4" />
+      <div className="mx-auto text-gray-400 mb-4" style={{ fontSize: '64px' }}>🗺️</div>
       <h3 className="text-lg font-semibold text-gray-700 mb-2">ROI Heat Map</h3>
       <p className="text-gray-500 mb-4">
         Visualize properties with ROI-based sizing and color-coded heat mapping for investment analysis.
@@ -105,7 +115,7 @@ const ROIscoutDashboard = () => {
 
   const ListPlaceholder = () => (
     <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-      <List size={64} className="mx-auto text-gray-400 mb-4" />
+      <div className="mx-auto text-gray-400 mb-4" style={{ fontSize: '64px' }}>📋</div>
       <h3 className="text-lg font-semibold text-gray-700 mb-2">Property Search & List</h3>
       <p className="text-gray-500 mb-4">
         Search, filter, and sort properties with advanced analytics and export capabilities.
@@ -165,7 +175,7 @@ const ROIscoutDashboard = () => {
 
             {/* Chart placeholder */}
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <BarChart3 size={48} className="mx-auto text-gray-400 mb-4" />
+              <div className="mx-auto text-gray-400 mb-4" style={{ fontSize: '48px' }}>📊</div>
               <h4 className="text-lg font-semibold text-gray-600 mb-2">Market Trends Chart</h4>
               <p className="text-gray-500">Price-to-rent ratio trends over time</p>
               <p className="text-sm text-gray-400 mt-2">
@@ -218,7 +228,7 @@ const ROIscoutDashboard = () => {
                         <div className="text-sm text-gray-500">{property.price}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Star size={16} className="text-yellow-500 fill-current" />
+                        <span className="text-yellow-500" style={{ fontSize: '16px' }}>⭐</span>
                         <span className="text-sm font-medium text-green-600">{property.ratio}</span>
                       </div>
                     </div>
@@ -241,14 +251,14 @@ const ROIscoutDashboard = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Home className="text-white" size={20} />
+                <span className="text-white" style={{ fontSize: '20px' }}>🏠</span>
               </div>
               <h1 className="text-xl font-bold text-gray-800">ROIscout</h1>
             </div>
             
             {/* Global search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" style={{ fontSize: '16px' }}>🔍</span>
               <input
                 type="text"
                 placeholder="Search properties, zip codes, or addresses..."
@@ -259,7 +269,7 @@ const ROIscoutDashboard = () => {
 
           <div className="flex items-center gap-4">
             <button className="relative p-2 text-gray-600 hover:text-gray-800 transition-colors">
-              <Bell size={20} />
+              <span style={{ fontSize: '20px' }}>🔔</span>
               {notifications > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                   {notifications}
@@ -267,7 +277,7 @@ const ROIscoutDashboard = () => {
               )}
             </button>
             <button className="flex items-center gap-2 p-2 text-gray-600 hover:text-gray-800 transition-colors">
-              <User size={20} />
+              <span style={{ fontSize: '20px' }}>👤</span>
               <span className="text-sm font-medium">Profile</span>
             </button>
           </div>
@@ -300,28 +310,24 @@ const ROIscoutDashboard = () => {
           <nav className="space-y-2">
             <TabButton
               id="map"
-              icon={Map}
               label="ROI Heat Map"
               isActive={activeTab === 'map'}
               onClick={setActiveTab}
             />
             <TabButton
               id="list"
-              icon={List}
               label="Search & List"
               isActive={activeTab === 'list'}
               onClick={setActiveTab}
             />
             <TabButton
               id="analytics"
-              icon={BarChart3}
               label="Analytics"
               isActive={activeTab === 'analytics'}
               onClick={setActiveTab}
             />
             <TabButton
               id="saved"
-              icon={Star}
               label="Saved & Favorites"
               isActive={activeTab === 'saved'}
               onClick={setActiveTab}
@@ -360,35 +366,35 @@ const ROIscoutDashboard = () => {
           {/* Top stats bar */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
             <StatCard
-              icon={Home}
+              icon="🏠"
               label="Total Properties"
               value={stats.totalProperties.toLocaleString()}
               change="+127 this week"
               color="blue"
             />
             <StatCard
-              icon={TrendingUp}
+              icon="📈"
               label="Avg Ratio"
               value={`${stats.avgRatio}%`}
               change="+0.3% this month"
               color="green"
             />
             <StatCard
-              icon={Target}
+              icon="🎯"
               label="Exceptional Deals"
               value={stats.exceptionalDeals.toString()}
               change="+5 this week"
               color="yellow"
             />
             <StatCard
-              icon={DollarSign}
+              icon="💰"
               label="Market Trend"
               value={stats.marketTrend}
               change="Improving"
               color="purple"
             />
             <StatCard
-              icon={Star}
+              icon="⭐"
               label="Saved Searches"
               value={stats.savedSearches.toString()}
               color="blue"
