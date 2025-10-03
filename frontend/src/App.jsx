@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
-// Components
-import Header from './components/Layout/Header';
+// Components - testing one by one
+// import Header from './components/Layout/Header';
 import SimpleLandingPage from './components/Landing/SimpleLandingPage';
-import Login from './components/Auth/Login';
-import Signup from './components/Auth/Signup';
-import Dashboard from './components/Dashboard/Dashboard';
+// import Login from './components/Auth/Login';
+// import Signup from './components/Auth/Signup';
+// import Dashboard from './components/Dashboard/Dashboard';
 
 // Services
 import { authService } from './services/auth';
@@ -57,30 +57,9 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Header user={user} onLogout={handleLogout} />
-        
-        <Routes>
-          <Route 
-            path="/" 
-            element={user ? <Navigate to="/dashboard" /> : <SimpleLandingPage />} 
-          />
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/dashboard" /> : <Login onLogin={handleLogin} />} 
-          />
-          <Route 
-            path="/signup" 
-            element={user ? <Navigate to="/dashboard" /> : <Signup onLogin={handleLogin} />} 
-          />
-          <Route 
-            path="/dashboard" 
-            element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} 
-          />
-        </Routes>
-      </div>
-    </Router>
+    <div className="min-h-screen bg-gray-50">
+      <SimpleLandingPage />
+    </div>
   );
 }
 
