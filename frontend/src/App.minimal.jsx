@@ -1,4 +1,3 @@
-// Minimal test version
 import React from 'react';
 import TestApp from './TestApp';
 
