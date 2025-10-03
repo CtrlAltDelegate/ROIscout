@@ -3,9 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
-// Initialize Sentry
+// Sentry
 import { initSentry, SentryErrorBoundary, setUser as setSentryUser } from './config/sentry';
-initSentry();
 
 // Components
 import Header from './components/Layout/Header';
@@ -16,6 +15,9 @@ import Dashboard from './components/Dashboard/Dashboard';
 
 // Services
 import { authService } from './services/auth';
+
+// Initialize Sentry after imports
+initSentry();
 
 function App() {
   const [user, setUser] = useState(null);
