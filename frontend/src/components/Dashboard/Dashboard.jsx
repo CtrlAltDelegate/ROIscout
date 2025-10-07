@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // Removed lucide-react imports - using emoji icons instead
-import BasicROIMap from '../Map/BasicROIMap';
+import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
 
 const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -134,11 +134,11 @@ const ROIscoutDashboard = () => {
     console.log('🎯 Rendering tab content for:', activeTab);
     switch (activeTab) {
       case 'map':
-        console.log('🗺️ Loading BasicROIMap component...');
+        console.log('🗺️ Loading EnhancedROIHeatMap component...');
         try {
-          return <BasicROIMap />;
+          return <EnhancedROIHeatMap />;
         } catch (error) {
-          console.error('❌ Error loading BasicROIMap:', error);
+          console.error('❌ Error loading EnhancedROIHeatMap:', error);
           return (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <h3 className="text-red-800 font-semibold mb-2">Component Error</h3>
