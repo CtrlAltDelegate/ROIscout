@@ -135,17 +135,7 @@ const ROIscoutDashboard = () => {
     switch (activeTab) {
       case 'map':
         console.log('🗺️ Loading EnhancedROIHeatMap component...');
-        try {
-          return <EnhancedROIHeatMap />;
-        } catch (error) {
-          console.error('❌ Error loading EnhancedROIHeatMap:', error);
-          return (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-red-800 font-semibold mb-2">Component Error</h3>
-              <p className="text-red-600">Failed to load ROI Heat Map: {error.message}</p>
-            </div>
-          );
-        }
+        return <EnhancedROIHeatMap />;
       case 'list':
         return <ListPlaceholder />;
         // return <PropertyList />; // Uncomment when component is imported
