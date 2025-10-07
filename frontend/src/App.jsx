@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
-// Components - testing one by one
+// Components - adding Dashboard back
 import Header from './components/Layout/Header';
 import SimpleLandingPage from './components/Landing/SimpleLandingPage';
+import Dashboard from './components/Dashboard/Dashboard';
 
 // Services
 import { authService } from './services/auth';
@@ -57,7 +58,11 @@ function App() {
         <Routes>
           <Route 
             path="/" 
-            element={<SimpleLandingPage />} 
+            element={user ? <Navigate to="/dashboard" /> : <SimpleLandingPage />} 
+          />
+          <Route 
+            path="/dashboard" 
+            element={user ? <Dashboard user={user} /> : <Navigate to="/" />} 
           />
         </Routes>
       </div>
