@@ -15,6 +15,55 @@ const EnhancedROIHeatMap = () => {
   ];
 
   useEffect(() => {
+    const generateAustinSampleData = () => {
+      const properties = [];
+      const neighborhoods = {
+        '78701': { name: 'Downtown', lat: 30.2672, lng: -97.7431, priceMultiplier: 1.4 },
+        '78702': { name: 'East Austin', lat: 30.2588, lng: -97.7197, priceMultiplier: 1.1 },
+        '78703': { name: 'Central Austin', lat: 30.2849, lng: -97.7341, priceMultiplier: 1.3 },
+        '78704': { name: 'South Austin', lat: 30.2241, lng: -97.7703, priceMultiplier: 1.0 },
+        '78705': { name: 'University', lat: 30.2849, lng: -97.7341, priceMultiplier: 0.9 }
+      };
+
+      AUSTIN_ZIP_CODES.forEach((zipCode, zipIndex) => {
+        const neighborhood = neighborhoods[zipCode];
+        
+        // Generate 8-12 properties per zip code
+        const propertyCount = 8 + Math.floor(Math.random() * 5);
+        
+        for (let i = 0; i < propertyCount; i++) {
+          const basePrice = 250000 + (Math.random() * 200000);
+          const listPrice = Math.round(basePrice * neighborhood.priceMultiplier);
+          const estimatedRent = Math.round(listPrice * (0.007 + Math.random() * 0.005));
+          const roiScore = ((estimatedRent * 12) / listPrice) * 100;
+          
+          // Add some location variance
+          const latVariance = (Math.random() - 0.5) * 0.02;
+          const lngVariance = (Math.random() - 0.5) * 0.02;
+          
+          properties.push({
+            id: `${zipCode}-${i}`,
+            address: `${1000 + (zipIndex * 100) + i} ${['Oak', 'Elm', 'Main', 'Cedar', 'Pine'][Math.floor(Math.random() * 5)]} St`,
+            city: 'Austin',
+            state: 'TX',
+            zipCode: zipCode,
+            neighborhood: neighborhood.name,
+            listPrice: listPrice,
+            estimatedRent: estimatedRent,
+            roiScore: Math.round(roiScore * 100) / 100,
+            latitude: neighborhood.lat + latVariance,
+            longitude: neighborhood.lng + lngVariance,
+            bedrooms: 2 + Math.floor(Math.random() * 3),
+            bathrooms: 1 + Math.floor(Math.random() * 2.5),
+            sqft: 800 + Math.floor(Math.random() * 1200),
+            propertyType: ['Single Family', 'Condo', 'Townhouse'][Math.floor(Math.random() * 3)]
+          });
+        }
+      });
+
+      return properties.sort((a, b) => b.roiScore - a.roiScore);
+    };
+
     const fetchAustinProperties = async () => {
       setLoading(true);
       try {
@@ -31,55 +80,6 @@ const EnhancedROIHeatMap = () => {
 
     fetchAustinProperties();
   }, []);
-
-  const generateAustinSampleData = () => {
-    const properties = [];
-    const neighborhoods = {
-      '78701': { name: 'Downtown', lat: 30.2672, lng: -97.7431, priceMultiplier: 1.4 },
-      '78702': { name: 'East Austin', lat: 30.2588, lng: -97.7197, priceMultiplier: 1.1 },
-      '78703': { name: 'Central Austin', lat: 30.2849, lng: -97.7341, priceMultiplier: 1.3 },
-      '78704': { name: 'South Austin', lat: 30.2241, lng: -97.7703, priceMultiplier: 1.0 },
-      '78705': { name: 'University', lat: 30.2849, lng: -97.7341, priceMultiplier: 0.9 }
-    };
-
-    AUSTIN_ZIP_CODES.forEach((zipCode, zipIndex) => {
-      const neighborhood = neighborhoods[zipCode];
-      
-      // Generate 8-12 properties per zip code
-      const propertyCount = 8 + Math.floor(Math.random() * 5);
-      
-      for (let i = 0; i < propertyCount; i++) {
-        const basePrice = 250000 + (Math.random() * 200000);
-        const listPrice = Math.round(basePrice * neighborhood.priceMultiplier);
-        const estimatedRent = Math.round(listPrice * (0.007 + Math.random() * 0.005));
-        const roiScore = ((estimatedRent * 12) / listPrice) * 100;
-        
-        // Add some location variance
-        const latVariance = (Math.random() - 0.5) * 0.02;
-        const lngVariance = (Math.random() - 0.5) * 0.02;
-        
-        properties.push({
-          id: `${zipCode}-${i}`,
-          address: `${1000 + (zipIndex * 100) + i} ${['Oak', 'Elm', 'Main', 'Cedar', 'Pine'][Math.floor(Math.random() * 5)]} St`,
-          city: 'Austin',
-          state: 'TX',
-          zipCode: zipCode,
-          neighborhood: neighborhood.name,
-          listPrice: listPrice,
-          estimatedRent: estimatedRent,
-          roiScore: Math.round(roiScore * 100) / 100,
-          latitude: neighborhood.lat + latVariance,
-          longitude: neighborhood.lng + lngVariance,
-          bedrooms: 2 + Math.floor(Math.random() * 3),
-          bathrooms: 1 + Math.floor(Math.random() * 2.5),
-          sqft: 800 + Math.floor(Math.random() * 1200),
-          propertyType: ['Single Family', 'Condo', 'Townhouse'][Math.floor(Math.random() * 3)]
-        });
-      }
-    });
-
-    return properties.sort((a, b) => b.roiScore - a.roiScore);
-  };
 
   const getROIColor = (roiScore) => {
     if (roiScore >= 10) return '#059669'; // Excellent - Dark green
