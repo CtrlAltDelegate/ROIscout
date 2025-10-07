@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
-const EnhancedROIHeatMap = () => {
-  // Austin target zip codes - limited to conserve API calls
-  const AUSTIN_ZIP_CODES = [
-    '78701', // Downtown Austin
-    '78702', // East Austin
-    '78703', // Central Austin
-    '78704', // South Austin
-    '78705'  // University area
-  ];
+// Austin target zip codes - limited to conserve API calls
+const AUSTIN_ZIP_CODES = [
+  '78701', // Downtown Austin
+  '78702', // East Austin
+  '78703', // Central Austin
+  '78704', // South Austin
+  '78705'  // University area
+];
 
+const EnhancedROIHeatMap = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -79,7 +79,7 @@ const EnhancedROIHeatMap = () => {
     };
 
     fetchAustinProperties();
-  }, [AUSTIN_ZIP_CODES]);
+  }, []);
 
   const getROIColor = (roiScore) => {
     if (roiScore >= 10) return '#059669'; // Excellent - Dark green
