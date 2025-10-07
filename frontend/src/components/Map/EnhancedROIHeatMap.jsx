@@ -4,7 +4,8 @@ const EnhancedROIHeatMap = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProperty, setSelectedProperty] = useState(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 30.2672, lng: -97.7431 }); // Austin center
+  // Austin center coordinates for map positioning
+  const mapCenter = { lat: 30.2672, lng: -97.7431 };
 
   // Austin target zip codes - limited to conserve API calls
   const AUSTIN_ZIP_CODES = [
