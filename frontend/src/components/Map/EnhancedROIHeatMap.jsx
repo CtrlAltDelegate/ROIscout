@@ -4,8 +4,6 @@ const EnhancedROIHeatMap = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProperty, setSelectedProperty] = useState(null);
-  // Austin center coordinates for map positioning
-  const mapCenter = { lat: 30.2672, lng: -97.7431 };
 
   // Austin target zip codes - limited to conserve API calls
   const AUSTIN_ZIP_CODES = [
@@ -17,22 +15,22 @@ const EnhancedROIHeatMap = () => {
   ];
 
   useEffect(() => {
+    const fetchAustinProperties = async () => {
+      setLoading(true);
+      try {
+        // In production, this would call your backend API
+        // For now, generating realistic sample data for Austin
+        const sampleProperties = generateAustinSampleData();
+        setProperties(sampleProperties);
+      } catch (error) {
+        console.error('Error fetching Austin properties:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchAustinProperties();
   }, []);
-
-  const fetchAustinProperties = async () => {
-    setLoading(true);
-    try {
-      // In production, this would call your backend API
-      // For now, generating realistic sample data for Austin
-      const sampleProperties = generateAustinSampleData();
-      setProperties(sampleProperties);
-    } catch (error) {
-      console.error('Error fetching Austin properties:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const generateAustinSampleData = () => {
     const properties = [];
@@ -161,7 +159,7 @@ const EnhancedROIHeatMap = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <button
-              onClick={fetchAustinProperties}
+              onClick={() => window.location.reload()}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               🔄 Refresh Data
