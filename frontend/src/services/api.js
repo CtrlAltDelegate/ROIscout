@@ -102,5 +102,15 @@ export const apiService = {
     const response = await apiClient.post('/stripe/billing-portal');
     return response.data;
   },
+
+  // Map usage (for Mapbox load tracking / alerts)
+  async recordMapLoad() {
+    const response = await apiClient.post('/map/loaded');
+    return response.data;
+  },
+  async getMapUsage() {
+    const response = await apiClient.get('/map/usage');
+    return response.data;
+  },
 };
 

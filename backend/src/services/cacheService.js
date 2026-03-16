@@ -86,6 +86,46 @@ class CacheService {
   }
 
   /**
+   * Get raw string value (for binary stored as base64, etc.)
+   */
+  async getString(key) {
+    if (!this.isConnected) return null;
+    try {
+      return await this.client.get(key);
+    } catch (error) {
+      console.error('Cache getString error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Set raw string value with TTL (e.g. base64-encoded tile data)
+   */
+  async setString(key, value, ttl = this.defaultTTL) {
+    if (!this.isConnected) return false;
+    try {
+      await this.client.setEx(key, ttl, value);
+      return true;
+    } catch (error) {
+      console.error('Cache setString error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Increment a counter (e.g. map loads per month). Returns new value.
+   */
+  async incr(key) {
+    if (!this.isConnected) return null;
+    try {
+      return await this.client.incr(key);
+    } catch (error) {
+      console.error('Cache incr error:', error);
+      return null;
+    }
+  }
+
+  /**
    * Delete key from cache
    */
   async del(key) {

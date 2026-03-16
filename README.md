@@ -130,6 +130,9 @@ ZILLOW_API_KEY=
 RENTOMETER_API_KEY=
 GREATSCHOOLS_API_KEY=
 
+# Optional: Mapbox (for tile proxy / usage tracking; same token as frontend is fine)
+# MAPBOX_ACCESS_TOKEN=   # or backend reads REACT_APP_MAPBOX_TOKEN if set
+
 # Optional: Observability
 SENTRY_DSN=
 DATADOG_API_KEY=
@@ -158,6 +161,8 @@ REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_...
 REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
 REACT_APP_SENTRY_DSN=
 ```
+
+**Mapbox:** Set usage alerts in the [Mapbox dashboard](https://account.mapbox.com/) (e.g. at 40k map loads/month; free tier is 50k). See **docs/MONITORING.md** for details. If costs grow, [MapLibre GL JS](https://maplibre.org/) is a free drop-in replacement.
 
 ### 5. Run development servers
 

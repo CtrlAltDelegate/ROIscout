@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DataFreshnessBadge from '../Shared/DataFreshnessBadge';
+import { apiService } from '../../services/api';
 
 // Austin target zip codes - limited to conserve API calls
 const AUSTIN_ZIP_CODES = [
@@ -80,6 +81,11 @@ const EnhancedROIHeatMap = () => {
     };
 
     fetchAustinProperties();
+  }, []);
+
+  // Record map load for usage monitoring (Mapbox free tier: 50k loads/month)
+  useEffect(() => {
+    apiService.recordMapLoad().catch(() => {});
   }, []);
 
   const getROIColor = (roiScore) => {

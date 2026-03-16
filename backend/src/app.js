@@ -18,6 +18,7 @@ const dataRoutes = require('./routes/data');
 const searchRoutes = require('./routes/search');
 const stripeRoutes = require('./routes/stripe');
 const exportRoutes = require('./routes/export');
+const mapRoutes = require('./routes/map');
 const usageRoutes = require('./routes/usage');
 const adminRoutes = require('./routes/admin');
 const healthRoutes = require('./routes/health');
@@ -84,6 +85,7 @@ app.use('/api/data', dataRoutes);
 app.use('/api/searches', searchLimiter, searchRoutes);
 app.use('/api/export', exportLimiter, exportRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/map', mapRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/admin', adminRoutes);
 

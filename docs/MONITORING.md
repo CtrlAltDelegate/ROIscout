@@ -120,6 +120,44 @@ Our application provides multiple health check endpoints:
 - [ ] Test health check endpoints
 - [ ] Verify alert notifications work
 
+## 🗺️ Mapbox Usage Monitoring
+
+Free tier: **50,000 map loads/month**. At early scale (e.g. 500 users × 10 loads/month = 5,000) you stay within the free tier, but set alerts now so you're not surprised.
+
+### 1. Set up Mapbox Dashboard alerts
+
+1. Log in at [Mapbox Account](https://account.mapbox.com/).
+2. Open **Usage** or **Billing** and find **Usage alerts**.
+3. Create an alert for **Map loads** (or **Static map views**) at **40,000** or **45,000** per month so you're notified before hitting 50,000.
+4. Optionally add a second alert at 48,000 for a final warning.
+
+### 2. In-app usage tracking
+
+The app records a **map load** when the dashboard map view is shown (one increment per view). Stored in Redis under `mapbox:loads:YYYY-MM`.
+
+- **POST /api/map/loaded** – called by the frontend when the map mounts (no auth required).
+- **GET /api/map/usage** – returns current month count and status (auth required). Response includes `mapLoads`, `freeTierLimit` (50,000), `alertThreshold` (40,000), `nearLimit`, `overLimit`.
+
+When the count crosses the alert threshold (40,000), the backend logs a warning. You can also call `GET /api/map/usage` from an admin or cron job to send your own alert (e.g. webhook, email).
+
+### 3. Tile caching (Redis)
+
+To reduce redundant requests to Mapbox, an optional **tile proxy** caches raster tiles in Redis:
+
+- **GET /api/map/tiles/:z/:x/:y** – fetches the tile from Mapbox (Static Tiles API), caches it in Redis for 7 days, and returns the image. Repeat requests for the same tile are served from Redis.
+
+To use the proxy from the frontend, point your map’s raster tile URL to your API (e.g. `https://your-api.com/api/map/tiles/{z}/{x}/{y}`). The backend needs `MAPBOX_ACCESS_TOKEN` or `REACT_APP_MAPBOX_TOKEN` for upstream requests.
+
+### 4. If Mapbox costs become significant
+
+**MapLibre GL JS** is a free, open-source fork of Mapbox GL JS and is a drop-in replacement. You can switch the frontend to MapLibre and use your own tile server or free/freemium tile sources to avoid Mapbox billing. No backend changes required for the map itself; only the client-side map library and tile URLs change.
+
+### Monitoring checklist (Mapbox)
+
+- [ ] Mapbox usage alert set at 40k–45k map loads/month
+- [ ] Redis available so map load count and tile cache work
+- [ ] Optional: periodic check of `GET /api/map/usage` (e.g. from admin or cron)
+
 ## 🚨 Alert Configuration
 
 ### Critical Alerts (Immediate Response)
