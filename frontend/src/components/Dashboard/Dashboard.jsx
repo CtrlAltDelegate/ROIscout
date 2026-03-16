@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-// Removed lucide-react imports - using emoji icons instead
 import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
+import ROITableView from './ROITableView';
 
 const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -137,8 +137,7 @@ const ROIscoutDashboard = () => {
         console.log('🗺️ Loading EnhancedROIHeatMap component...');
         return <EnhancedROIHeatMap />;
       case 'list':
-        return <ListPlaceholder />;
-        // return <PropertyList />; // Uncomment when component is imported
+        return <ROITableView />;
       case 'analytics':
         return (
           <div className="bg-white rounded-lg shadow-lg p-6">

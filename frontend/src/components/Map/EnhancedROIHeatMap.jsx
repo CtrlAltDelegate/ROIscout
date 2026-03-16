@@ -174,7 +174,7 @@ const EnhancedROIHeatMap = () => {
           </div>
           <DataFreshnessBadge
             dataLastUpdated={null}
-            dataSources="Market data sourced from Zillow Research, HUD, and Census Bureau public datasets. Updated monthly. Always verify independently before making investment decisions."
+            dataSources="Data from Zillow Research, HUD Fair Market Rents, and Census Bureau. Updated monthly. Always verify independently before making investment decisions."
           />
         </div>
 
