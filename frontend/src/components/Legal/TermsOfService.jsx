@@ -27,13 +27,15 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mt-6">3. Data Disclaimer</h2>
-            <p className="bg-amber-50 border-l-4 border-amber-400 p-4 text-gray-800">
-              <strong>Important:</strong> Market data is sourced from Zillow Research, HUD Fair Market
-              Rents, and Census Bureau public datasets. Data is updated monthly. This information is
-              for research and educational purposes only. Always verify independently before making
-              investment decisions. ROIscout is not responsible for decisions made based on the data
-              or tools provided.
+            <h2 className="text-xl font-semibold text-gray-900 mt-6">3. Market Data &amp; Disclaimer</h2>
+            <p>
+              We are transparent about our data so you have accurate expectations. Market data sourced
+              from Zillow Research, HUD, and Census Bureau public datasets. Updated monthly. Always
+              verify independently before making investment decisions.
+            </p>
+            <p className="mt-3 text-gray-600">
+              ROIscout does not guarantee the accuracy or completeness of third-party data and is not
+              responsible for any investment or other decisions you make using the Service.
             </p>
           </section>
 
@@ -80,9 +82,12 @@ const TermsOfService = () => {
           </section>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-gray-200">
+        <div className="mt-10 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-4">
           <Link to="/" className="text-blue-600 hover:text-blue-800 font-medium">
             ← Back to home
+          </Link>
+          <Link to="/privacy" className="text-gray-600 hover:text-gray-800 text-sm">
+            Privacy Policy
           </Link>
         </div>
       </div>

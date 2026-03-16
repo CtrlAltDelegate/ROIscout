@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -14,7 +15,11 @@ const PrivacyPolicy = () => {
             <p>
               We collect information you provide (e.g., email, name when you sign up), usage data
               (e.g., how you use the app, saved searches), and payment information processed by
-              Stripe. We do not store full payment card details.
+              Stripe. We do not store full payment card details. Market data shown in the Service
+              (e.g., median prices, rents, yields) comes from third-party public sources — Zillow
+              Research, HUD, and Census Bureau — as described in our{' '}
+              <Link to="/terms" className="text-blue-600 hover:text-blue-800">Terms of Service</Link>
+              {' '}and in the data disclaimer on the site.
             </p>
           </section>
 
@@ -78,9 +83,12 @@ const PrivacyPolicy = () => {
           </section>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-gray-200">
+        <div className="mt-10 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-4">
           <Link to="/" className="text-blue-600 hover:text-blue-800 font-medium">
             ← Back to home
+          </Link>
+          <Link to="/terms" className="text-gray-600 hover:text-gray-800 text-sm">
+            Terms of Service
           </Link>
         </div>
       </div>
