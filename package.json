@@ -10,7 +10,8 @@
     "start:frontend": "cd frontend && npm start",
     "test": "cd backend && npm test && cd ../frontend && npm test",
     "ingest": "node scripts/ingest-data.js",
-    "ingest:zip": "node scripts/ingest-zip-data-free-sources.js"
+    "ingest:zip": "node scripts/ingest-zip-data-free-sources.js",
+    "load-test:filter-map": "node scripts/load-test-filter-map.js"
   },
   "keywords": [
     "real-estate",

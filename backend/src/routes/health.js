@@ -83,6 +83,28 @@ router.get('/detailed', async (req, res) => {
     };
   }
 
+  // Tile cache verification (same path as map tiles: setString/getString)
+  if (healthCheck.checks.redis.status === 'healthy') {
+    try {
+      const testKey = 'health:tile_cache_test';
+      const testVal = Buffer.from('tile').toString('base64');
+      await cacheService.setString(testKey, testVal, 60);
+      const got = await cacheService.getString(testKey);
+      healthCheck.checks.tileCache = got === testVal
+        ? { status: 'healthy', message: 'Tile cache (setString/getString) OK' }
+        : { status: 'unhealthy', message: 'Tile cache read-back mismatch' };
+      await cacheService.del(testKey);
+    } catch (error) {
+      healthCheck.checks.tileCache = {
+        status: 'unhealthy',
+        error: error.message,
+        message: 'Tile cache check failed'
+      };
+    }
+  } else {
+    healthCheck.checks.tileCache = { status: 'skipped', message: 'Redis unavailable' };
+  }
+
   // Memory usage check
   const memUsage = process.memoryUsage();
   const memUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);

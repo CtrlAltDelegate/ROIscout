@@ -423,9 +423,31 @@ const stripeController = {
           console.log('Payment succeeded for invoice:', event.data.object.id);
           break;
 
-        case 'invoice.payment_failed':
-          console.log('Payment failed for invoice:', event.data.object.id);
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object;
+          console.log('Payment failed for invoice:', invoice.id, 'subscription:', invoice.subscription);
+          if (invoice.subscription) {
+            try {
+              const stripeSubscription = await stripe.subscriptions.retrieve(invoice.subscription, { expand: ['items.data.price'] });
+              await query(
+                `UPDATE subscriptions SET status = $1, current_period_start = $2, current_period_end = $3 WHERE stripe_subscription_id = $4`,
+                [
+                  stripeSubscription.status,
+                  new Date(stripeSubscription.current_period_start * 1000),
+                  new Date(stripeSubscription.current_period_end * 1000),
+                  stripeSubscription.id,
+                ]
+              );
+              const subRow = await query('SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1', [stripeSubscription.id]);
+              if (subRow.rows[0]) {
+                await syncUserSubscriptionPlan(subRow.rows[0].user_id, stripeSubscription);
+              }
+            } catch (err) {
+              console.error('invoice.payment_failed sync error:', err.message);
+            }
+          }
           break;
+        }
 
         default:
           console.log(`Unhandled event type ${event.type}`);

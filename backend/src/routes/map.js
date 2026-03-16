@@ -55,6 +55,7 @@ router.get('/tiles/:z/:x/:y', async (req, res) => {
       const buf = Buffer.from(cached, 'base64');
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days
+      res.setHeader('X-Cache', 'HIT'); // for verification / load testing
       return res.send(buf);
     }
   } catch (e) {
@@ -69,6 +70,7 @@ router.get('/tiles/:z/:x/:y', async (req, res) => {
     const contentType = (response.headers['content-type'] || 'image/png').split(';')[0];
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=604800');
+    res.setHeader('X-Cache', 'MISS'); // for verification / load testing
     res.send(buffer);
   } catch (e) {
     console.error('Tile fetch error:', e.message);
