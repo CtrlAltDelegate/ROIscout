@@ -69,7 +69,8 @@ roi-scout/
     ├── dev.js                 # Concurrent dev runner
     ├── migrate.js             # Run DB migrations
     ├── seed.js                # Seed sample data
-    ├── ingest-data.js         # Property data ingestion pipeline
+    ├── ingest-data.js              # Property data ingestion pipeline
+    ├── ingest-zip-data-free-sources.js  # zip_data from Zillow ZHVI/ZORI + Census (see data/README.md)
     ├── setup-database.js      # First-time DB setup
     └── test-api.js            # Manual API testing
 ```
@@ -294,7 +295,8 @@ npm start          # Start production server (minimal-server.js)
 npm run dev        # Start dev server with nodemon
 npm run migrate    # Run database migrations
 npm run seed       # Seed sample data
-npm run ingest     # Run data ingestion pipeline
+npm run ingest     # Run property-level data ingestion pipeline
+npm run ingest:zip # Run zip_data pipeline from Zillow ZHVI/ZORI (+ optional Census). Place CSVs in data/ (see data/README.md). From backend: node ../scripts/ingest-zip-data-free-sources.js --dry-run to test; use --min-zips 500 before beta.
 npm run cleanup    # Clean up stale data
 npm test           # Run Jest tests
 ```

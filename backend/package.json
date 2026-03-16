@@ -10,6 +10,7 @@
     "migrate": "node ../scripts/migrate.js",
     "seed": "node ../scripts/seed.js",
     "ingest": "node ../scripts/ingest-data.js",
+    "ingest:zip": "node ../scripts/ingest-zip-data-free-sources.js",
     "cleanup": "node ../scripts/cleanup-data.js",
     "postinstall": "echo 'Backend dependencies installed successfully'"
   },

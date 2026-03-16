@@ -85,6 +85,9 @@ temp/
 *.sqlite
 railway.json
 
+# Large data CSVs (Zillow ZHVI/ZORI, etc.) – keep in data/ locally
+/data/*.csv
+
 # IDE
 .vscode/
 .idea/

@@ -2,6 +2,11 @@
 
 // Complete Data Ingestion Script for ROIscout
 // Run with: node scripts/ingest-data.js
+//
+// For zip_data from free sources (Zillow ZHVI/ZORI, Census ACS), use:
+//   node scripts/ingest-data.js --free-sources
+// or: npm run ingest:zip
+// See scripts/ingest-zip-data-free-sources.js and data/README.md.
 
 const PropertyDataIngestion = require('../backend/PropertyDataIngestion');
 const RealEstateAPIs = require('../backend/RealEstateAPIs');
@@ -493,6 +498,9 @@ function parseArgs() {
             case '--no-cleanup':
                 config.cleanupOldData = false;
                 break;
+            case '--free-sources':
+                config.freeSources = true;
+                break;
             case '--help':
                 console.log(`
 ROIscout Data Ingestion Script
@@ -500,14 +508,16 @@ ROIscout Data Ingestion Script
 Usage: node scripts/ingest-data.js [options]
 
 Options:
-  --zip-codes <codes>      Comma-separated zip codes (default: from .env)
+  --free-sources          Run zip_data pipeline from Zillow ZHVI/ZORI + Census (see data/README.md)
+  --zip-codes <codes>    Comma-separated zip codes (default: from .env)
   --properties-per-zip <n> Properties to fetch per zip code (default: 25)
   --mock-data <true/false> Use mock data instead of real APIs (default: from .env)
-  --no-rentals            Skip rental comp data ingestion
-  --no-cleanup            Skip cleanup of old data
-  --help                  Show this help message
+  --no-rentals           Skip rental comp data ingestion
+  --no-cleanup           Skip cleanup of old data
+  --help                 Show this help message
 
 Examples:
+  node scripts/ingest-data.js --free-sources --zhvi data/zhvi_zip.csv --zori data/zori_zip.csv --min-zips 500
   node scripts/ingest-data.js --zip-codes 90210,10001 --properties-per-zip 50
   node scripts/ingest-data.js --mock-data true --no-rentals
                 `);
@@ -521,19 +531,27 @@ Examples:
 // Main execution
 if (require.main === module) {
     const cliConfig = parseArgs();
+
+    if (cliConfig.freeSources) {
+        const { spawn } = require('child_process');
+        const sub = spawn(
+            process.execPath,
+            [require('path').join(__dirname, 'ingest-zip-data-free-sources.js'), ...process.argv.slice(2).filter((a) => a !== '--free-sources')],
+            { stdio: 'inherit', cwd: require('path').resolve(__dirname, '..') }
+        );
+        sub.on('close', (code) => process.exit(code ?? 0));
+        return;
+    }
+
     const ingestion = new CompleteDataIngestion();
-    
-    // Override config with CLI arguments
     Object.assign(ingestion.config, cliConfig);
-    
-    // Handle graceful shutdown
+
     process.on('SIGINT', async () => {
         console.log('\n🛑 Received SIGINT, shutting down gracefully...');
         await ingestion.db.end();
         process.exit(0);
     });
-    
-    // Run the ingestion
+
     ingestion.run().catch(error => {
         console.error('💥 Fatal error:', error);
         process.exit(1);
