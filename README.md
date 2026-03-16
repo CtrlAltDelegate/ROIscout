@@ -113,9 +113,11 @@ REDIS_URL=redis://localhost:6379
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# Stripe
+# Stripe (Basic $19.99/mo, Pro $49.99/mo)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_BASIC_PRICE_ID=price_...   # Create in Stripe Dashboard for Basic plan
+STRIPE_PRO_PRICE_ID=price_...    # Create in Stripe Dashboard for Pro plan
 
 # Email
 SMTP_HOST=smtp.example.com

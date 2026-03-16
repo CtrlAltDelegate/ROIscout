@@ -8,6 +8,8 @@ import SimpleLandingPage from './components/Landing/SimpleLandingPage';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
 import Dashboard from './components/Dashboard/Dashboard';
+import TermsOfService from './components/Legal/TermsOfService';
+import PrivacyPolicy from './components/Legal/PrivacyPolicy';
 
 // Services
 import { authService } from './services/auth';
@@ -74,6 +76,8 @@ function App() {
             path="/dashboard" 
             element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} 
           />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
         </Routes>
       </div>
     </Router>

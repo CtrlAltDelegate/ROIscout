@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DataFreshnessBadge from '../Shared/DataFreshnessBadge';
 
 // Austin target zip codes - limited to conserve API calls
 const AUSTIN_ZIP_CODES = [
@@ -171,9 +172,10 @@ const EnhancedROIHeatMap = () => {
               ))}
             </select>
           </div>
-          <div className="text-sm text-gray-600">
-            Last updated: {new Date().toLocaleTimeString()}
-          </div>
+          <DataFreshnessBadge
+            dataLastUpdated={null}
+            dataSources="Market data sourced from Zillow Research, HUD, and Census Bureau public datasets. Updated monthly. Always verify independently before making investment decisions."
+          />
         </div>
 
         {/* Legend */}

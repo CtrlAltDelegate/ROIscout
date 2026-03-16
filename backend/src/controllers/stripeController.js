@@ -329,53 +329,35 @@ const stripeController = {
   },
 
   /**
-   * Get pricing plans
+   * Get pricing plans (Basic $19.99 / Pro $49.99 per Launch Readiness plan)
    */
   async getPricingPlans(req, res) {
     try {
-      // In a real app, you'd store these in your database or fetch from Stripe
       const plans = [
         {
-          id: 'free',
-          name: 'Free',
-          price: 0,
+          id: 'basic',
+          name: 'Basic',
+          price: 19.99,
           interval: 'month',
           features: [
-            '10 property searches per month',
-            'Basic ROI calculations',
-            'Limited export functionality'
+            'Limited saved searches',
+            'Core ROI metrics (yield, GRM, rent-to-price)',
+            'Map access'
           ],
-          stripePriceId: null
+          stripePriceId: process.env.STRIPE_BASIC_PRICE_ID || null
         },
         {
           id: 'pro',
           name: 'Pro',
-          price: 29,
+          price: 49.99,
           interval: 'month',
           features: [
-            'Unlimited property searches',
-            'Advanced ROI analytics',
-            'Full export functionality (CSV, PDF)',
-            'Save favorite properties',
-            'Share search results',
-            'Email alerts for new deals'
+            'Unlimited saved searches',
+            'CSV export',
+            'Email alerts for saved searches',
+            'Full metrics suite'
           ],
-          stripePriceId: process.env.STRIPE_PRO_PRICE_ID
-        },
-        {
-          id: 'enterprise',
-          name: 'Enterprise',
-          price: 99,
-          interval: 'month',
-          features: [
-            'Everything in Pro',
-            'API access',
-            'Custom integrations',
-            'Priority support',
-            'Advanced market analytics',
-            'Team collaboration features'
-          ],
-          stripePriceId: process.env.STRIPE_ENTERPRISE_PRICE_ID
+          stripePriceId: process.env.STRIPE_PRO_PRICE_ID || null
         }
       ];
 

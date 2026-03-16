@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import DataFreshnessBadge from '../Shared/DataFreshnessBadge';
 
-const ROITable = ({ data }) => {
+const ROITable = ({ data, dataLastUpdated, dataSources }) => {
   const [sortField, setSortField] = useState('gross_rental_yield');
   const [sortDirection, setSortDirection] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,10 +59,19 @@ const ROITable = ({ data }) => {
     <div className="bg-gray-800 rounded-lg border border-gray-700">
       {/* Header */}
       <div className="p-4 border-b border-gray-700">
-        <h3 className="text-lg font-semibold text-white">ROI Analysis Results</h3>
-        <p className="text-sm text-gray-400 mt-1">
-          Showing {paginatedData.length} of {sortedData.length} areas
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-lg font-semibold text-white">ROI Analysis Results</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Showing {paginatedData.length} of {sortedData.length} areas
+            </p>
+          </div>
+          <DataFreshnessBadge
+            dataLastUpdated={dataLastUpdated}
+            dataSources={dataSources}
+            className="[&_span]:bg-gray-700 [&_span]:text-gray-300 [&_span]:border-gray-600"
+          />
+        </div>
       </div>
 
       {/* Table */}

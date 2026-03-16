@@ -94,6 +94,8 @@ const dataController = {
               total: realData.length,
               filters: filters,
               source: 'properties_table',
+              dataLastUpdated: null,
+              dataSources: 'Various listing sources',
             });
           } else {
             return res.json({
@@ -101,7 +103,9 @@ const dataController = {
               total: 0,
               filters: filters,
               source: 'no_data',
-              message: 'No properties found matching your criteria. Try running data ingestion first.'
+              message: 'No properties found matching your criteria. Try running data ingestion first.',
+              dataLastUpdated: null,
+              dataSources: null,
             });
           }
         } catch (error) {
@@ -113,11 +117,22 @@ const dataController = {
         }
       }
 
+      // Data freshness: use latest last_updated from result set for UI indicator
+      const dataLastUpdated = result.rows.length > 0
+        ? result.rows.reduce((latest, row) => {
+            const rowDate = row.last_updated ? new Date(row.last_updated) : null;
+            return !latest ? rowDate : (rowDate > latest ? rowDate : latest);
+          }, null)
+        : null;
+      const dataSources = 'Zillow Research, HUD Fair Market Rents, Census Bureau';
+
       res.json({
         data: result.rows,
         total: result.rows.length,
         filters: filters,
         source: 'database',
+        dataLastUpdated: dataLastUpdated ? dataLastUpdated.toISOString() : null,
+        dataSources,
       });
     } catch (error) {
       console.error('Get pricing data error:', error);
