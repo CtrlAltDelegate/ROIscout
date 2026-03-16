@@ -1,4 +1,5 @@
 const { query } = require('../config/database');
+const usageService = require('../services/usageService');
 
 const searchController = {
   /**
@@ -50,16 +51,21 @@ const searchController = {
         });
       }
 
-      // Check user's saved search limit (max 10 for MVP)
+      // Check user's saved search limit by plan (Basic: 5, Pro: unlimited)
+      const limits = await usageService.getUserPlanLimits(userId);
+      const maxSearches = limits.saved_searches < 0 ? 9999 : limits.saved_searches;
       const searchCount = await query(
         'SELECT COUNT(*) as count FROM saved_searches WHERE user_id = $1',
         [userId]
       );
+      const count = parseInt(searchCount.rows[0].count, 10);
 
-      if (parseInt(searchCount.rows[0].count) >= 10) {
+      if (count >= maxSearches) {
         return res.status(400).json({
           error: 'Search Limit Exceeded',
-          message: 'You can save up to 10 searches. Please delete some to add new ones.',
+          message: maxSearches === 9999
+            ? 'Unable to save search.'
+            : `You can save up to ${maxSearches} searches. Upgrade to Pro for unlimited saved searches.`,
         });
       }
 

@@ -136,13 +136,20 @@ const usageService = {
     const limits = {
       free: {
         property_search: 10,
-        export_csv: 2,
-        export_pdf: 1,
+        export_csv: 0,
+        export_pdf: 0,
         saved_searches: 3,
         api_calls: 100
       },
+      basic: {
+        property_search: -1,
+        export_csv: 0,
+        export_pdf: 0,
+        saved_searches: 5,
+        api_calls: 1000
+      },
       pro: {
-        property_search: -1, // unlimited
+        property_search: -1,
         export_csv: -1,
         export_pdf: -1,
         saved_searches: -1,
@@ -153,7 +160,7 @@ const usageService = {
         export_csv: -1,
         export_pdf: -1,
         saved_searches: -1,
-        api_calls: -1 // unlimited
+        api_calls: -1
       }
     };
 

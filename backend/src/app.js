@@ -17,6 +17,7 @@ const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
 const searchRoutes = require('./routes/search');
 const stripeRoutes = require('./routes/stripe');
+const exportRoutes = require('./routes/export');
 const usageRoutes = require('./routes/usage');
 const adminRoutes = require('./routes/admin');
 const healthRoutes = require('./routes/health');
@@ -65,6 +66,10 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
 }
 
+// Stripe webhook must receive raw body for signature verification (before express.json)
+const stripeController = require('./controllers/stripeController');
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeController.handleWebhook);
+
 // Body parsing
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
@@ -77,7 +82,7 @@ app.use('/health', healthRoutes);
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/searches', searchLimiter, searchRoutes);
-app.use('/api/export', exportLimiter); // Will be added when we create export routes
+app.use('/api/export', exportLimiter, exportRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/admin', adminRoutes);

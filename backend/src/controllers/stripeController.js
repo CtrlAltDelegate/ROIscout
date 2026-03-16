@@ -1,7 +1,79 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { query } = require('../config/database');
 
+const BASIC_PRICE_ID = process.env.STRIPE_BASIC_PRICE_ID;
+const PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+function planIdFromPriceId(priceId) {
+  if (!priceId) return 'free';
+  if (priceId === BASIC_PRICE_ID) return 'basic';
+  if (priceId === PRO_PRICE_ID) return 'pro';
+  return 'pro'; // fallback for legacy or custom prices
+}
+
+async function syncUserSubscriptionPlan(userId, stripeSubscription) {
+  if (!stripeSubscription || !stripeSubscription.items?.data?.[0]) return;
+  const priceId = stripeSubscription.items.data[0].price.id;
+  const plan = planIdFromPriceId(priceId);
+  await query(
+    'UPDATE users SET subscription_plan = $1, subscription_status = $2 WHERE id = $3',
+    [plan, stripeSubscription.status === 'active' ? 'active' : 'free', userId]
+  );
+}
+
 const stripeController = {
+  /**
+   * Create Stripe Checkout Session for subscription (redirect to Stripe-hosted page)
+   */
+  async createCheckoutSession(req, res) {
+    try {
+      const { priceId, planId, successUrl, cancelUrl } = req.body;
+      const userId = req.user.userId;
+
+      const resolvedPriceId = priceId || (planId === 'basic' ? BASIC_PRICE_ID : planId === 'pro' ? PRO_PRICE_ID : null);
+      if (!resolvedPriceId) {
+        return res.status(400).json({
+          error: 'Invalid plan',
+          message: 'Provide priceId or planId (basic|pro)',
+        });
+      }
+
+      const userResult = await query(
+        'SELECT email, stripe_customer_id FROM users WHERE id = $1',
+        [userId]
+      );
+      if (!userResult.rows[0]) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      const { email, stripe_customer_id: customerId } = userResult.rows[0];
+
+      const sessionConfig = {
+        mode: 'subscription',
+        line_items: [{ price: resolvedPriceId, quantity: 1 }],
+        success_url: successUrl || `${FRONTEND_URL}/dashboard?subscription=success`,
+        cancel_url: cancelUrl || `${FRONTEND_URL}/pricing?canceled=1`,
+        metadata: { userId: userId.toString() },
+        subscription_data: { metadata: { userId: userId.toString() } },
+      };
+      if (customerId) {
+        sessionConfig.customer = customerId;
+      } else {
+        sessionConfig.customer_email = email;
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionConfig);
+
+      res.json({ url: session.url, sessionId: session.id });
+    } catch (error) {
+      console.error('Create checkout session error:', error);
+      res.status(500).json({
+        error: 'Failed to create checkout session',
+        message: error.message,
+      });
+    }
+  },
+
   /**
    * Create a Stripe customer
    */
@@ -128,6 +200,8 @@ const stripeController = {
           new Date(subscription.current_period_end * 1000)
         ]
       );
+      const expanded = await stripe.subscriptions.retrieve(subscription.id, { expand: ['items.data.price'] });
+      await syncUserSubscriptionPlan(userId, expanded);
 
       res.json({
         subscriptionId: subscription.id,
@@ -163,10 +237,11 @@ const stripeController = {
 
       // Get latest info from Stripe
       const stripeSubscription = await stripe.subscriptions.retrieve(
-        subscription.stripe_subscription_id
+        subscription.stripe_subscription_id,
+        { expand: ['items.data.price'] }
       );
 
-      // Update local database
+      // Update local database and user plan
       await query(
         `UPDATE subscriptions SET 
          status = $1, current_period_start = $2, current_period_end = $3
@@ -178,15 +253,20 @@ const stripeController = {
           userId
         ]
       );
+      await syncUserSubscriptionPlan(userId, stripeSubscription);
+
+      const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
+      const planId = planIdFromPriceId(priceId);
 
       res.json({
         subscription: {
           id: stripeSubscription.id,
           status: stripeSubscription.status,
+          planId,
+          plan: planId === 'basic' ? 'Basic' : planId === 'pro' ? 'Pro' : (stripeSubscription.items.data[0].price.nickname || 'Pro'),
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
           currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
           cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-          plan: stripeSubscription.items.data[0].price.nickname || 'Pro Plan'
         }
       });
     } catch (error) {
@@ -272,14 +352,13 @@ const stripeController = {
   },
 
   /**
-   * Webhook handler for Stripe events
+   * Webhook handler for Stripe events (must receive raw body; mounted in app.js before express.json)
    */
   async handleWebhook(req, res) {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     let event;
-
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err) {
@@ -289,8 +368,37 @@ const stripeController = {
 
     try {
       switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object;
+          const subscriptionId = session.subscription;
+          const userId = session.metadata?.userId ? parseInt(session.metadata.userId, 10) : null;
+          if (subscriptionId && userId) {
+            const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ['items.data.price'] });
+            await query(
+              `INSERT INTO subscriptions (user_id, stripe_subscription_id, stripe_customer_id, status, current_period_start, current_period_end)
+               VALUES ($1, $2, $3, $4, $5, $6)
+               ON CONFLICT (user_id) DO UPDATE SET
+                 stripe_subscription_id = $2, status = $4, current_period_start = $5, current_period_end = $6`,
+              [
+                userId,
+                stripeSubscription.id,
+                stripeSubscription.customer,
+                stripeSubscription.status,
+                new Date(stripeSubscription.current_period_start * 1000),
+                new Date(stripeSubscription.current_period_end * 1000),
+              ]
+            );
+            await syncUserSubscriptionPlan(userId, stripeSubscription);
+            const customerId = typeof stripeSubscription.customer === 'string' ? stripeSubscription.customer : stripeSubscription.customer?.id;
+            if (customerId) {
+              await query('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [customerId, userId]);
+            }
+          }
+          break;
+        }
+
         case 'customer.subscription.updated':
-        case 'customer.subscription.deleted':
+        case 'customer.subscription.deleted': {
           const subscription = event.data.object;
           await query(
             `UPDATE subscriptions SET 
@@ -303,18 +411,20 @@ const stripeController = {
               subscription.id
             ]
           );
+          const subRow = await query('SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1', [subscription.id]);
+          if (subRow.rows[0]) {
+            const expanded = await stripe.subscriptions.retrieve(subscription.id, { expand: ['items.data.price'] });
+            await syncUserSubscriptionPlan(subRow.rows[0].user_id, expanded);
+          }
           break;
+        }
 
         case 'invoice.payment_succeeded':
-          const invoice = event.data.object;
-          // Update usage tracking or send confirmation email
-          console.log('Payment succeeded for invoice:', invoice.id);
+          console.log('Payment succeeded for invoice:', event.data.object.id);
           break;
 
         case 'invoice.payment_failed':
-          const failedInvoice = event.data.object;
-          // Handle failed payment
-          console.log('Payment failed for invoice:', failedInvoice.id);
+          console.log('Payment failed for invoice:', event.data.object.id);
           break;
 
         default:

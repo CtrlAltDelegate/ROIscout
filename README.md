@@ -198,12 +198,17 @@ POST   /api/searches              # Save a search (protected)
 DELETE /api/searches/:id          # Delete a saved search (protected)
 ```
 
-### Billing
+### Billing (Stripe – Basic $19.99 / Pro $49.99)
 ```
-POST /api/stripe/create-checkout-session
-POST /api/stripe/webhook
-GET  /api/stripe/subscription-status
+GET  /api/stripe/plans              # Pricing plans (protected)
+POST /api/stripe/checkout-session   # Create Checkout Session, redirect to Stripe (protected)
+GET  /api/stripe/subscription       # Current subscription status (protected)
+DELETE /api/stripe/subscription     # Cancel at period end (protected)
+POST /api/stripe/billing-portal     # Stripe Customer Portal URL (protected)
+POST /api/stripe/webhook            # Stripe webhooks (raw body; no auth)
+GET  /api/export/csv                # CSV export (Pro only; same query params as pricing-data)
 ```
+Before beta: create two Products in Stripe (Basic, Pro) with recurring prices, set `STRIPE_BASIC_PRICE_ID` and `STRIPE_PRO_PRICE_ID`, and configure the webhook endpoint (e.g. `https://your-api/api/stripe/webhook`) for `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`.
 
 ### Other
 ```

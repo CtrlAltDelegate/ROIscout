@@ -15,6 +15,9 @@ router.use((req, res, next) => {
 // GET /api/stripe/plans - Get pricing plans
 router.get('/plans', stripeController.getPricingPlans);
 
+// POST /api/stripe/checkout-session - Create Checkout Session (redirect to Stripe)
+router.post('/checkout-session', stripeController.createCheckoutSession);
+
 // POST /api/stripe/customer - Create Stripe customer
 router.post('/customer', stripeController.createCustomer);
 
@@ -30,7 +33,6 @@ router.delete('/subscription', stripeController.cancelSubscription);
 // POST /api/stripe/billing-portal - Create billing portal session
 router.post('/billing-portal', stripeController.createBillingPortal);
 
-// POST /api/stripe/webhook - Stripe webhook handler (no auth required)
-router.post('/webhook', express.raw({ type: 'application/json' }), stripeController.handleWebhook);
+// Webhook is mounted in app.js with raw body (before express.json)
 
 module.exports = router;

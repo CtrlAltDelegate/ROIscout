@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { apiService } from '../../services/api';
 
 const Header = ({ user, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [subscription, setSubscription] = useState(null);
   const location = useLocation();
+
+  useEffect(() => {
+    if (!user) {
+      setSubscription(null);
+      return;
+    }
+    apiService.getSubscription().then((res) => setSubscription(res.subscription || null)).catch(() => setSubscription(null));
+  }, [user]);
 
   const handleLogout = () => {
     onLogout();
@@ -36,7 +46,16 @@ const Header = ({ user, onLogout }) => {
                 >
                   Dashboard
                 </Link>
-                
+                <Link
+                  to="/pricing"
+                  className={`transition-colors ${
+                    location.pathname === '/pricing'
+                      ? 'text-green-400'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Pricing
+                </Link>
                 <div className="relative">
                   <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -63,9 +82,21 @@ const Header = ({ user, onLogout }) => {
                         <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700">
                           Signed in as
                         </div>
-                        <div className="px-4 py-2 text-sm text-white truncate">
-                          {user.email}
+                        <div className="px-4 py-2 text-sm text-white truncate flex items-center justify-between gap-2">
+                          <span>{user.email}</span>
+                          {subscription?.status === 'active' && (
+                            <span className="text-xs font-medium text-green-400 bg-gray-700 px-1.5 py-0.5 rounded">
+                              {subscription.planId === 'pro' ? 'Pro' : 'Basic'}
+                            </span>
+                          )}
                         </div>
+                        <Link
+                          to="/pricing"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                        >
+                          {subscription?.status === 'active' ? 'Manage subscription' : 'Upgrade'}
+                        </Link>
                         <div className="border-t border-gray-700">
                           <button
                             onClick={handleLogout}
@@ -81,6 +112,16 @@ const Header = ({ user, onLogout }) => {
               </>
             ) : (
               <>
+                <Link
+                  to="/pricing"
+                  className={`transition-colors ${
+                    location.pathname === '/pricing'
+                      ? 'text-green-400'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Pricing
+                </Link>
                 <Link
                   to="/login"
                   className={`transition-colors ${
@@ -131,6 +172,9 @@ const Header = ({ user, onLogout }) => {
                 <>
                   <div className="px-4 py-2 text-sm text-gray-400">
                     Signed in as {user.email}
+                    {subscription?.status === 'active' && (
+                      <span className="ml-2 text-green-400">({subscription.planId === 'pro' ? 'Pro' : 'Basic'})</span>
+                    )}
                   </div>
                   <Link
                     to="/dashboard"
@@ -143,6 +187,13 @@ const Header = ({ user, onLogout }) => {
                   >
                     Dashboard
                   </Link>
+                  <Link
+                    to="/pricing"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  >
+                    {subscription?.status === 'active' ? 'Manage subscription' : 'Pricing'}
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-gray-300 hover:text-white transition-colors"
@@ -152,6 +203,13 @@ const Header = ({ user, onLogout }) => {
                 </>
               ) : (
                 <>
+                  <Link
+                    to="/pricing"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  >
+                    Pricing
+                  </Link>
                   <Link
                     to="/login"
                     onClick={() => setIsMenuOpen(false)}

@@ -10,6 +10,7 @@ import Signup from './components/Auth/Signup';
 import Dashboard from './components/Dashboard/Dashboard';
 import TermsOfService from './components/Legal/TermsOfService';
 import PrivacyPolicy from './components/Legal/PrivacyPolicy';
+import PricingPage from './components/Pricing/PricingPage';
 
 // Services
 import { authService } from './services/auth';
@@ -76,6 +77,7 @@ function App() {
             path="/dashboard" 
             element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} 
           />
+          <Route path="/pricing" element={<PricingPage user={user} />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
         </Routes>

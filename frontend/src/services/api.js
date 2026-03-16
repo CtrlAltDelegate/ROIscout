@@ -75,5 +75,32 @@ export const apiService = {
     const response = await apiClient.delete(`/searches/${searchId}`);
     return response.data;
   },
+
+  // Stripe / subscription
+  async getStripePlans() {
+    const response = await apiClient.get('/stripe/plans');
+    return response.data;
+  },
+  async createCheckoutSession({ planId, priceId, successUrl, cancelUrl }) {
+    const response = await apiClient.post('/stripe/checkout-session', {
+      planId,
+      priceId,
+      successUrl,
+      cancelUrl,
+    });
+    return response.data;
+  },
+  async getSubscription() {
+    const response = await apiClient.get('/stripe/subscription');
+    return response.data;
+  },
+  async cancelSubscription() {
+    const response = await apiClient.delete('/stripe/subscription');
+    return response.data;
+  },
+  async createBillingPortalSession() {
+    const response = await apiClient.post('/stripe/billing-portal');
+    return response.data;
+  },
 };
 
