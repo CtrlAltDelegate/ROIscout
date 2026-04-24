@@ -107,6 +107,11 @@ export const apiService = {
     return response.data;
   },
 
+  async getDashboardStats() {
+    const response = await apiClient.get('/data/stats');
+    return response.data;
+  },
+
   // Map usage (for Mapbox load tracking / alerts)
   async recordMapLoad() {
     const response = await apiClient.post('/map/loaded');

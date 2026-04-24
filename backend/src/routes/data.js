@@ -36,12 +36,18 @@ router.get('/counties/:state',
 );
 
 // GET /api/data/zipcodes/:county - Get zip codes for a county (cached for 1 hour)
-router.get('/zipcodes/:county', 
+router.get('/zipcodes/:county',
   cacheService.middleware(
     (req) => `zipcodes:${req.params.county}`,
     60 * 60 // 1 hour
   ),
   dataController.getZipCodes
+);
+
+// GET /api/data/stats - Dashboard summary stats (cached for 10 minutes)
+router.get('/stats',
+  cacheService.middleware('global-stats', 10 * 60),
+  dataController.getStats
 );
 
 module.exports = router;

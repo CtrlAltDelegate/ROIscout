@@ -158,8 +158,8 @@ const EnhancedROIHeatMap = () => {
           </div>
         </div>
 
-        {/* Visual scatter plot */}
-        <div className="bg-gray-100 rounded-lg mb-6 relative overflow-hidden" style={{ height: '320px' }}>
+        {/* Scatter plot: Price (X) vs Yield (Y) */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg mb-6 relative overflow-hidden" style={{ height: '340px' }}>
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex items-center gap-3 text-gray-500">
@@ -171,38 +171,59 @@ const EnhancedROIHeatMap = () => {
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
               No data available for {selectedState}
             </div>
-          ) : (
-            <>
-              <div className="absolute top-3 left-3 text-xs text-gray-400">
-                Yield % (bubble size = yield, color = tier) — {topPerformers.length} top zip codes shown
-              </div>
-              {topPerformers.map((row, index) => {
-                const yield_pct = parseFloat(row.gross_rental_yield);
-                const size = getROISize(yield_pct);
-                // Spread bubbles across the area based on yield and index
-                const x = 8 + (index % 10) * 9;
-                const y = 20 + Math.floor(index / 10) * 45 + (yield_pct % 3) * 5;
-                return (
-                  <div
-                    key={row.zip_code}
-                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-transform hover:scale-125"
-                    style={{
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      width: size,
-                      height: size,
-                      backgroundColor: getROIColor(yield_pct),
-                      borderRadius: '50%',
-                      border: selectedZip?.zip_code === row.zip_code ? '3px solid #1d4ed8' : '2px solid white',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                    }}
-                    onClick={() => setSelectedZip(row)}
-                    title={`${row.zip_code} — ${yield_pct.toFixed(1)}% yield`}
-                  />
-                );
-              })}
-            </>
-          )}
+          ) : (() => {
+            const plotData = topPerformers.slice(0, 40);
+            const prices = plotData.map(r => Number(r.median_price));
+            const yields = plotData.map(r => parseFloat(r.gross_rental_yield));
+            const minPrice = Math.min(...prices), maxPrice = Math.max(...prices);
+            const minYield = Math.min(...yields), maxYield = Math.max(...yields);
+            const priceRange = maxPrice - minPrice || 1;
+            const yieldRange = maxYield - minYield || 1;
+            // 6% padding on all sides inside the chart area
+            const toX = (p) => 6 + ((p - minPrice) / priceRange) * 88;
+            const toY = (y) => 90 - ((y - minYield) / yieldRange) * 80; // invert: high yield = top
+            return (
+              <>
+                {/* Axis labels */}
+                <div className="absolute bottom-2 left-0 right-0 flex justify-between px-6 text-xs text-gray-400 pointer-events-none">
+                  <span>${(minPrice/1000).toFixed(0)}k</span>
+                  <span className="font-medium text-gray-500">← Price →</span>
+                  <span>${(maxPrice/1000).toFixed(0)}k</span>
+                </div>
+                <div className="absolute top-2 left-2 text-xs text-gray-400 pointer-events-none" style={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)', height: 60 }}>
+                  Yield ↑
+                </div>
+                <div className="absolute top-2 right-3 text-xs text-gray-400 pointer-events-none">
+                  {plotData.length} zip codes
+                </div>
+                {plotData.map((row) => {
+                  const yield_pct = parseFloat(row.gross_rental_yield);
+                  const size = getROISize(yield_pct);
+                  const x = toX(Number(row.median_price));
+                  const y = toY(yield_pct);
+                  return (
+                    <div
+                      key={row.zip_code}
+                      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-transform hover:scale-150"
+                      style={{
+                        left: `${x}%`,
+                        top: `${y}%`,
+                        width: size,
+                        height: size,
+                        backgroundColor: getROIColor(yield_pct),
+                        borderRadius: '50%',
+                        border: selectedZip?.zip_code === row.zip_code ? '3px solid #1d4ed8' : '2px solid white',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                        zIndex: selectedZip?.zip_code === row.zip_code ? 10 : 1,
+                      }}
+                      onClick={() => setSelectedZip(row)}
+                      title={`ZIP ${row.zip_code} — $${Number(row.median_price).toLocaleString()} — ${yield_pct.toFixed(1)}% yield`}
+                    />
+                  );
+                })}
+              </>
+            );
+          })()}
         </div>
 
         {/* Selected zip detail */}

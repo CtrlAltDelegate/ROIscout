@@ -1,44 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
 import ROITableView from './ROITableView';
+import { apiService } from '../../services/api';
 
 const ROIscoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
-  const [notifications] = useState(3);
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  // Mock stats for the dashboard
-  const stats = {
-    totalProperties: 1247,
-    avgRatio: 4.8,
-    exceptionalDeals: 23,
-    savedSearches: 5,
-    marketTrend: '+12.5%'
-  };
-
-  // Mock recent activity
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'new_deal',
-      message: 'New exceptional deal found in Beverly Hills',
-      time: '2 hours ago',
-      ratio: 6.8
-    },
-    {
-      id: 2,
-      type: 'price_drop',
-      message: 'Price dropped on saved property in Venice',
-      time: '4 hours ago',
-      change: '-$25,000'
-    },
-    {
-      id: 3,
-      type: 'market_update',
-      message: 'Market conditions improved in 90210',
-      time: '1 day ago',
-      trend: '+5.2%'
-    }
-  ];
+  useEffect(() => {
+    apiService.getDashboardStats()
+      .then(data => setStats(data))
+      .catch(() => setStats(null))
+      .finally(() => setStatsLoading(false));
+  }, []);
 
   const getIconEmoji = (id) => {
     const iconMap = {
@@ -130,19 +105,29 @@ const ROIscoutDashboard = () => {
             {/* Quick metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
-                <div className="text-blue-600 text-sm font-medium">Average Ratio This Month</div>
-                <div className="text-2xl font-bold text-blue-800">{stats.avgRatio}%</div>
-                <div className="text-blue-600 text-sm">+0.3% from last month</div>
+                <div className="text-blue-600 text-sm font-medium">Avg Gross Yield</div>
+                <div className="text-2xl font-bold text-blue-800">
+                  {stats ? `${stats.avgYield}%` : '—'}
+                </div>
+                <div className="text-blue-600 text-sm">Across all tracked zips</div>
               </div>
               <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg">
-                <div className="text-green-600 text-sm font-medium">Exceptional Deals</div>
-                <div className="text-2xl font-bold text-green-800">{stats.exceptionalDeals}</div>
-                <div className="text-green-600 text-sm">5 new this week</div>
+                <div className="text-green-600 text-sm font-medium">Exceptional ZIPs (≥10%)</div>
+                <div className="text-2xl font-bold text-green-800">
+                  {stats ? stats.exceptionalCount.toLocaleString() : '—'}
+                </div>
+                <div className="text-green-600 text-sm">
+                  {stats ? `${((stats.exceptionalCount / stats.totalZips) * 100).toFixed(1)}% of tracked zips` : ''}
+                </div>
               </div>
               <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg">
-                <div className="text-purple-600 text-sm font-medium">Market Trend</div>
-                <div className="text-2xl font-bold text-purple-800">{stats.marketTrend}</div>
-                <div className="text-purple-600 text-sm">Improving conditions</div>
+                <div className="text-purple-600 text-sm font-medium">States Covered</div>
+                <div className="text-2xl font-bold text-purple-800">
+                  {stats ? stats.statesCovered : '—'}
+                </div>
+                <div className="text-purple-600 text-sm">
+                  {stats ? `${stats.totalZips.toLocaleString()} zip codes total` : ''}
+                </div>
               </div>
             </div>
 
@@ -263,20 +248,30 @@ const ROIscoutDashboard = () => {
           {/* Stats overview */}
           <div className="mb-8">
             <h2 className="text-sm font-semibold text-gray-800 mb-4">Quick Stats</h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Total Properties</span>
-                <span className="font-semibold text-gray-800">{stats.totalProperties.toLocaleString()}</span>
+            {statsLoading ? (
+              <div className="text-xs text-gray-400">Loading...</div>
+            ) : stats ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Zip Codes</span>
+                  <span className="font-semibold text-gray-800">{stats.totalZips.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Avg Yield</span>
+                  <span className="font-semibold text-green-600">{stats.avgYield}%</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">High-Yield ZIPs</span>
+                  <span className="font-semibold text-yellow-600">{stats.excellentCount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">States</span>
+                  <span className="font-semibold text-blue-600">{stats.statesCovered}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Avg Ratio</span>
-                <span className="font-semibold text-green-600">{stats.avgRatio}%</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Great Deals</span>
-                <span className="font-semibold text-yellow-600">{stats.exceptionalDeals}</span>
-              </div>
-            </div>
+            ) : (
+              <div className="text-xs text-gray-400">Unavailable</div>
+            )}
           </div>
 
           {/* Navigation */}
@@ -307,29 +302,14 @@ const ROIscoutDashboard = () => {
             />
           </nav>
 
-          {/* Recent activity */}
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-gray-800 mb-4">Recent Activity</h3>
-            <div className="space-y-3">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="text-sm font-medium text-gray-800 mb-1">
-                    {activity.message}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{activity.time}</span>
-                    {activity.ratio && (
-                      <span className="text-xs font-medium text-green-600">{activity.ratio}%</span>
-                    )}
-                    {activity.change && (
-                      <span className="text-xs font-medium text-blue-600">{activity.change}</span>
-                    )}
-                    {activity.trend && (
-                      <span className="text-xs font-medium text-purple-600">{activity.trend}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
+          {/* Data info */}
+          <div className="mt-8 p-3 bg-blue-50 rounded-lg">
+            <div className="text-xs font-semibold text-blue-700 mb-1">Data Sources</div>
+            <div className="text-xs text-blue-600">Zillow ZHVI & ZORI</div>
+            <div className="text-xs text-blue-500 mt-1">
+              {stats?.dataLastUpdated
+                ? `Updated ${new Date(stats.dataLastUpdated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
+                : 'Monthly updates'}
             </div>
           </div>
         </div>
@@ -337,40 +317,31 @@ const ROIscoutDashboard = () => {
         {/* Main content */}
         <div className="flex-1 p-6 overflow-auto">
           {/* Top stats bar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <StatCard
-              icon="🏠"
-              label="Total Properties"
-              value={stats.totalProperties.toLocaleString()}
-              change="+127 this week"
+              icon="🗺️"
+              label="Zip Codes Tracked"
+              value={statsLoading ? '...' : stats ? stats.totalZips.toLocaleString() : '—'}
+              change={stats ? `${stats.statesCovered} states` : null}
               color="blue"
             />
             <StatCard
               icon="📈"
-              label="Avg Ratio"
-              value={`${stats.avgRatio}%`}
-              change="+0.3% this month"
+              label="Avg Gross Yield"
+              value={statsLoading ? '...' : stats ? `${stats.avgYield}%` : '—'}
               color="green"
             />
             <StatCard
               icon="🎯"
-              label="Exceptional Deals"
-              value={stats.exceptionalDeals.toString()}
-              change="+5 this week"
+              label="Exceptional ZIPs (≥10%)"
+              value={statsLoading ? '...' : stats ? stats.exceptionalCount.toLocaleString() : '—'}
               color="yellow"
             />
             <StatCard
-              icon="💰"
-              label="Market Trend"
-              value={stats.marketTrend}
-              change="Improving"
+              icon="✅"
+              label="High-Yield ZIPs (≥8%)"
+              value={statsLoading ? '...' : stats ? stats.excellentCount.toLocaleString() : '—'}
               color="purple"
-            />
-            <StatCard
-              icon="⭐"
-              label="Saved Searches"
-              value={stats.savedSearches.toString()}
-              color="blue"
             />
           </div>
 
@@ -383,13 +354,17 @@ const ROIscoutDashboard = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 mt-6">
             <div className="flex items-center justify-between text-sm text-gray-600">
               <div className="flex items-center gap-4">
-                <span>Last updated: {new Date().toLocaleString()}</span>
+                <span>
+                  {stats?.dataLastUpdated
+                    ? `Data updated: ${new Date(stats.dataLastUpdated).toLocaleDateString()}`
+                    : 'Data sources: Zillow Research'}
+                </span>
                 <span>•</span>
-                <span>Data sources: RentCast, FRED API, MLS</span>
+                <span>Zillow ZHVI &amp; ZORI · HUD Fair Market Rents · Census Bureau</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>System healthy</span>
+                <span>Live data</span>
               </div>
             </div>
           </div>

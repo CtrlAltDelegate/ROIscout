@@ -307,6 +307,38 @@ const dataController = {
       });
     }
   },
+
+  /**
+   * Get global dashboard summary stats
+   */
+  async getStats(req, res) {
+    try {
+      const result = await query(`
+        SELECT
+          COUNT(*)                                          AS total_zips,
+          COUNT(DISTINCT state)                            AS states_covered,
+          ROUND(AVG(gross_rental_yield)::numeric, 2)       AS avg_yield,
+          COUNT(*) FILTER (WHERE gross_rental_yield >= 10) AS exceptional_count,
+          COUNT(*) FILTER (WHERE gross_rental_yield >= 8)  AS excellent_count,
+          MAX(last_updated)                                AS data_last_updated
+        FROM zip_data
+        WHERE median_price > 0 AND median_rent > 0
+      `);
+
+      const row = result.rows[0];
+      res.json({
+        totalZips:       parseInt(row.total_zips),
+        statesCovered:   parseInt(row.states_covered),
+        avgYield:        parseFloat(row.avg_yield),
+        exceptionalCount: parseInt(row.exceptional_count),
+        excellentCount:  parseInt(row.excellent_count),
+        dataLastUpdated: row.data_last_updated,
+      });
+    } catch (error) {
+      console.error('Get stats error:', error);
+      res.status(500).json({ error: 'Failed to get stats' });
+    }
+  },
 };
 
 module.exports = dataController;
