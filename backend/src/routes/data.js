@@ -7,8 +7,8 @@ const { validateQueryParams, addQueryHints } = require('../middleware/queryOptim
 const router = express.Router();
 
 // Apply query optimization middleware to all routes
-router.use(validateQueryParams);
-router.use(addQueryHints);
+router.use(validateQueryParams());
+router.use(addQueryHints());
 
 // GET /api/data/pricing-data - Get ROI data with filters (cached for 5 minutes)
 router.get('/pricing-data', 
