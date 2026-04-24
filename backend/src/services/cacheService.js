@@ -9,41 +9,29 @@ class CacheService {
   }
 
   async init() {
-    try {
-      // Create Redis client
-      this.client = redis.createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379',
-        retry_strategy: (options) => {
-          if (options.error && options.error.code === 'ECONNREFUSED') {
-            console.log('Redis connection refused, retrying...');
-          }
-          if (options.total_retry_time > 1000 * 60 * 60) {
-            return new Error('Retry time exhausted');
-          }
-          if (options.attempt > 10) {
-            return undefined;
-          }
-          return Math.min(options.attempt * 100, 3000);
-        }
-      });
+    if (!process.env.REDIS_URL) {
+      console.log('⚠️ REDIS_URL not set — caching disabled');
+      return;
+    }
 
-      // Handle connection events
+    try {
+      this.client = redis.createClient({ url: process.env.REDIS_URL });
+
       this.client.on('connect', () => {
-        console.log('✅ Redis client connected');
+        console.log('✅ Redis connected');
         this.isConnected = true;
       });
 
       this.client.on('error', (err) => {
-        console.log('⚠️ Redis client error:', err.message);
+        // Only log once to avoid log spam
+        if (this.isConnected) console.log('⚠️ Redis error:', err.message);
         this.isConnected = false;
       });
 
       this.client.on('end', () => {
-        console.log('Redis client disconnected');
         this.isConnected = false;
       });
 
-      // Connect to Redis
       await this.client.connect();
     } catch (error) {
       console.log('⚠️ Redis connection failed, caching disabled:', error.message);

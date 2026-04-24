@@ -60,7 +60,7 @@ const EnhancedROIHeatMap = () => {
     setError(null);
     setSelectedZip(null);
     try {
-      const response = await apiService.getPricingData({ state });
+      const response = await apiService.getPricingData({ state, limit: 100 });
       setZipData(response.data || []);
       setDataLastUpdated(response.dataLastUpdated);
     } catch (err) {

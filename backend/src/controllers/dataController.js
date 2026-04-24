@@ -78,7 +78,7 @@ const dataController = {
         FROM zip_data 
         WHERE ${conditions.join(' AND ')}
         ORDER BY gross_rental_yield DESC NULLS LAST
-        LIMIT 500
+        LIMIT ${Math.min(parseInt(req.query.limit) || 500, 500)}
       `;
 
       const result = await query(queryText, params);
