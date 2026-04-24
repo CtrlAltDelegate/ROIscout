@@ -44,18 +44,21 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const allowedOrigins = [
+  'https://roi-scout.netlify.app',
+  'https://roiscout.netlify.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://roi-scout.netlify.app',
-        'https://roiscout.netlify.app',
-        // Add your actual Netlify domain here
-        process.env.FRONTEND_URL || 'https://your-app.netlify.app'
-      ] 
-    : [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000'
-      ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
 }));
 
