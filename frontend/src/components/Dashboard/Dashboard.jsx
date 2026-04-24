@@ -113,22 +113,6 @@ const ROIscoutDashboard = () => {
     </div>
   );
 
-  const ListPlaceholder = () => (
-    <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-      <div className="mx-auto text-gray-400 mb-4" style={{ fontSize: '64px' }}>📋</div>
-      <h3 className="text-lg font-semibold text-gray-700 mb-2">Property Search & List</h3>
-      <p className="text-gray-500 mb-4">
-        Search, filter, and sort properties with advanced analytics and export capabilities.
-      </p>
-      <div className="bg-gray-50 rounded-lg p-4">
-        <p className="text-sm text-gray-600">
-          📋 Component: PropertyList.jsx<br/>
-          🔍 Features: Advanced search, sortable columns, CSV export<br/>
-          ⭐ Status: Ready for integration
-        </p>
-      </div>
-    </div>
-  );
 
   const renderTabContent = () => {
     console.log('🎯 Rendering tab content for:', activeTab);

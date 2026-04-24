@@ -45,7 +45,7 @@ const ROITableView = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters.state, filters.county, filters.zipCode, filters.minPrice, filters.maxPrice, filters.minRent]);
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchData();
