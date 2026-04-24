@@ -4,16 +4,16 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes require authentication except webhook
+// GET /api/stripe/plans - Public: no auth required
+router.get('/plans', stripeController.getPricingPlans);
+
+// All other routes require authentication except webhook
 router.use((req, res, next) => {
   if (req.path === '/webhook') {
     return next();
   }
   return authenticateToken(req, res, next);
 });
-
-// GET /api/stripe/plans - Get pricing plans
-router.get('/plans', stripeController.getPricingPlans);
 
 // POST /api/stripe/checkout-session - Create Checkout Session (redirect to Stripe)
 router.post('/checkout-session', stripeController.createCheckoutSession);
