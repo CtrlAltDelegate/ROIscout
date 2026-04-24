@@ -157,12 +157,15 @@ async function parseZillowCsv(filePathOrUrl, options = {}) {
     const zipRaw = zipIdx >= 0 ? row[zipIdx] : '';
     const zip = String(zipRaw).replace(/\D/g, '').slice(0, 5);
     if (zip.length !== 5) continue;
-    const state = stateIdx >= 0 && row[stateIdx] ? String(row[stateIdx]).trim().slice(0, 2) : getStateFromZip(zip);
+    // Zip-prefix lookup is authoritative — CSV state column can be wrong (e.g. metro-area mismatches)
+    const zipState = getStateFromZip(zip);
+    const csvState = stateIdx >= 0 && row[stateIdx] ? String(row[stateIdx]).trim().toUpperCase().slice(0, 2) : null;
+    const state = zipState || csvState;
     let val = valueIdx >= 0 ? row[valueIdx] : null;
     if (val !== null && val !== '') {
-    const num = parseFloat(String(val).replace(/[,$]/g, ''));
+      const num = parseFloat(String(val).replace(/[,$]/g, ''));
       if (!Number.isNaN(num) && num > 0) {
-        result.push({ zipCode: zip, state: state || getStateFromZip(zip), value: Math.round(num) });
+        result.push({ zipCode: zip, state, value: Math.round(num) });
       }
     }
   }
