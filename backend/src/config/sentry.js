@@ -1,5 +1,10 @@
 const Sentry = require('@sentry/node');
-const { ProfilingIntegration } = require('@sentry/profiling-node');
+let ProfilingIntegration;
+try {
+  ProfilingIntegration = require('@sentry/profiling-node').ProfilingIntegration;
+} catch (_) {
+  // profiling-node not installed — profiling disabled
+}
 
 /**
  * Initialize Sentry for error tracking and performance monitoring
@@ -27,8 +32,8 @@ function initSentry() {
       // Enable Express.js middleware tracing
       new Sentry.Integrations.Express({ app: undefined }),
       
-      // Enable profiling
-      new ProfilingIntegration(),
+      // Enable profiling (if available)
+      ...(ProfilingIntegration ? [new ProfilingIntegration()] : []),
     ],
     
     // Release tracking
