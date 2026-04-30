@@ -228,11 +228,6 @@ const ROIscoutDashboard = () => {
           <div className="flex items-center gap-4">
             <button className="relative p-2 text-gray-600 hover:text-gray-800 transition-colors">
               <span style={{ fontSize: '20px' }}>🔔</span>
-              {notifications > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {notifications}
-                </span>
-              )}
             </button>
             <button className="flex items-center gap-2 p-2 text-gray-600 hover:text-gray-800 transition-colors">
               <span style={{ fontSize: '20px' }}>👤</span>
