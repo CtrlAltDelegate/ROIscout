@@ -14,11 +14,13 @@ function planIdFromPriceId(priceId) {
 
 async function syncUserSubscriptionPlan(userId, stripeSubscription) {
   if (!stripeSubscription || !stripeSubscription.items?.data?.[0]) return;
+  const isActive = stripeSubscription.status === 'active';
   const priceId = stripeSubscription.items.data[0].price.id;
-  const plan = planIdFromPriceId(priceId);
+  // On cancellation/expiry, revert to free — don't retain old plan tier
+  const plan = isActive ? planIdFromPriceId(priceId) : 'free';
   await query(
     'UPDATE users SET subscription_plan = $1, subscription_status = $2 WHERE id = $3',
-    [plan, stripeSubscription.status === 'active' ? 'active' : 'free', userId]
+    [plan, isActive ? 'active' : 'free', userId]
   );
 }
 
@@ -461,47 +463,103 @@ const stripeController = {
   },
 
   /**
-   * Get pricing plans (Basic $19.99 / Pro $49.99 per Launch Readiness plan)
+   * Get pricing plans — Free / Basic $19.99 / Pro $79.99
    */
   async getPricingPlans(req, res) {
     try {
       const plans = [
+        {
+          id: 'free',
+          name: 'Free',
+          price: 0,
+          interval: 'month',
+          features: [
+            'Browse the national heatmap',
+            '10 zip code detail views per month',
+            'Core metrics: yield, GRM, rent-to-price',
+          ],
+          stripePriceId: null,
+        },
         {
           id: 'basic',
           name: 'Basic',
           price: 19.99,
           interval: 'month',
           features: [
-            'Limited saved searches',
-            'Core ROI metrics (yield, GRM, rent-to-price)',
-            'Map access'
+            'Unlimited zip code views',
+            'Unlimited saved searches',
+            'Full metrics suite',
+            'Email support',
           ],
-          stripePriceId: process.env.STRIPE_BASIC_PRICE_ID || null
+          stripePriceId: process.env.STRIPE_BASIC_PRICE_ID || null,
         },
         {
           id: 'pro',
           name: 'Pro',
-          price: 49.99,
+          price: 79.99,
           interval: 'month',
           features: [
-            'Unlimited saved searches',
+            'Everything in Basic',
             'CSV export',
-            'Email alerts for saved searches',
-            'Full metrics suite'
+            'Email alerts when saved markets cross yield thresholds',
+            'Priority support',
           ],
-          stripePriceId: process.env.STRIPE_PRO_PRICE_ID || null
-        }
+          stripePriceId: process.env.STRIPE_PRO_PRICE_ID || null,
+        },
       ];
 
       res.json({ plans });
     } catch (error) {
       console.error('Get pricing plans error:', error);
-      res.status(500).json({
-        error: 'Failed to get pricing plans',
-        message: error.message
-      });
+      res.status(500).json({ error: 'Failed to get pricing plans', message: error.message });
     }
-  }
+  },
+
+  /**
+   * Pause subscription billing via Stripe pause_collection
+   */
+  async pauseSubscription(req, res) {
+    try {
+      const userId = req.user.userId || req.user.id;
+      const userRow = await query('SELECT stripe_customer_id FROM users WHERE id = $1', [userId]);
+      const customerId = userRow.rows[0]?.stripe_customer_id;
+      if (!customerId) return res.status(404).json({ error: 'No Stripe customer found' });
+
+      const subs = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 1 });
+      if (!subs.data.length) return res.status(404).json({ error: 'No active subscription found' });
+
+      const updated = await stripe.subscriptions.update(subs.data[0].id, {
+        pause_collection: { behavior: 'mark_uncollectible' },
+      });
+
+      res.json({ success: true, pausedUntil: updated.pause_collection?.resumes_at || null });
+    } catch (err) {
+      console.error('Pause subscription error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  /**
+   * Resume a paused subscription
+   */
+  async resumeSubscription(req, res) {
+    try {
+      const userId = req.user.userId || req.user.id;
+      const userRow = await query('SELECT stripe_customer_id FROM users WHERE id = $1', [userId]);
+      const customerId = userRow.rows[0]?.stripe_customer_id;
+      if (!customerId) return res.status(404).json({ error: 'No Stripe customer found' });
+
+      const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1 });
+      if (!subs.data.length) return res.status(404).json({ error: 'No subscription found' });
+
+      await stripe.subscriptions.update(subs.data[0].id, { pause_collection: '' });
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Resume subscription error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
 };
 
 module.exports = stripeController;

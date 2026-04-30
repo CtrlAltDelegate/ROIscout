@@ -95,3 +95,5 @@ railway.json
 # OS
 .DS_Store
 Thumbs.db
+backend/data/*.csv
+.claude/settings.local.json

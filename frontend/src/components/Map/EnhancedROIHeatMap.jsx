@@ -46,13 +46,17 @@ const getROILabel = (yield_pct) => {
   return 'Poor';
 };
 
-const EnhancedROIHeatMap = () => {
+const EnhancedROIHeatMap = ({ user, onZipViewed }) => {
   const [selectedState, setSelectedState] = useState('TX');
   const [zipData, setZipData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedZip, setSelectedZip] = useState(null);
   const [dataLastUpdated, setDataLastUpdated] = useState(null);
+  const [viewLimitReached, setViewLimitReached] = useState(false);
+
+  const userPlan = user?.subscription_plan || user?.plan || 'free';
+  const isFree = userPlan === 'free';
 
   const fetchData = useCallback(async (state) => {
     if (!state) return;
@@ -78,6 +82,22 @@ const EnhancedROIHeatMap = () => {
   useEffect(() => {
     apiService.recordMapLoad().catch(() => {});
   }, []);
+
+  const handleZipClick = useCallback(async (row) => {
+    if (isFree && user) {
+      try {
+        const result = await apiService.recordZipView(row.zip_code);
+        if (!result.allowed) {
+          setViewLimitReached(true);
+          return;
+        }
+      } catch (err) {
+        // If tracking fails (e.g. not logged in), allow view
+      }
+    }
+    setSelectedZip(row);
+    if (onZipViewed) onZipViewed();
+  }, [isFree, user, onZipViewed]);
 
   const topPerformers = [...zipData]
     .sort((a, b) => parseFloat(b.gross_rental_yield) - parseFloat(a.gross_rental_yield))
@@ -216,7 +236,7 @@ const EnhancedROIHeatMap = () => {
                         boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
                         zIndex: selectedZip?.zip_code === row.zip_code ? 10 : 1,
                       }}
-                      onClick={() => setSelectedZip(row)}
+                      onClick={() => handleZipClick(row)}
                       title={`ZIP ${row.zip_code} — $${Number(row.median_price).toLocaleString()} — ${yield_pct.toFixed(1)}% yield`}
                     />
                   );
@@ -264,6 +284,29 @@ const EnhancedROIHeatMap = () => {
           </div>
         )}
 
+        {/* View limit reached prompt */}
+        {viewLimitReached && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-amber-800 text-sm">You've used all 10 free zip views this month</p>
+              <p className="text-xs text-amber-600 mt-0.5">Upgrade to Basic for unlimited zip code details.</p>
+            </div>
+            <a
+              href="/pricing"
+              className="ml-4 flex-shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            >
+              Upgrade — $19.99/mo
+            </a>
+          </div>
+        )}
+
+        {/* Data source attribution */}
+        <div className="text-xs text-gray-400 border-t border-gray-100 pt-3 mb-4">
+          Rental data: <span className="font-medium text-gray-500">Zillow ZORI</span> (asking rents, active listings) ·{' '}
+          Price data: <span className="font-medium text-gray-500">Zillow ZHVI</span> · Updated monthly ·{' '}
+          Gross yield = annual rent ÷ purchase price. Screening metric only — not a substitute for property-level underwriting.
+        </div>
+
         {/* Top performers table */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-4">Top Zip Codes by Yield — {selectedState}</h3>
@@ -281,7 +324,7 @@ const EnhancedROIHeatMap = () => {
                   <div
                     key={row.zip_code}
                     className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setSelectedZip(row)}
+                    onClick={() => handleZipClick(row)}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">

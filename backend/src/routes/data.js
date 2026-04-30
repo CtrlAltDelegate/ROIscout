@@ -1,6 +1,6 @@
 const express = require('express');
 const dataController = require('../controllers/dataController');
-const { optionalAuth } = require('../middleware/auth');
+const { optionalAuth, authenticateToken } = require('../middleware/auth');
 const cacheService = require('../services/cacheService');
 const { validateQueryParams, addQueryHints } = require('../middleware/queryOptimization');
 
@@ -49,5 +49,8 @@ router.get('/stats',
   cacheService.middleware('global-stats', 10 * 60),
   dataController.getStats
 );
+
+// POST /api/data/zip/view - Record a free-tier zip detail view (auth required)
+router.post('/zip/view', authenticateToken, dataController.recordZipView);
 
 module.exports = router;

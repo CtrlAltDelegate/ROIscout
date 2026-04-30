@@ -33,6 +33,12 @@ router.delete('/subscription', stripeController.cancelSubscription);
 // POST /api/stripe/billing-portal - Create billing portal session
 router.post('/billing-portal', stripeController.createBillingPortal);
 
+// POST /api/stripe/pause - Pause subscription billing
+router.post('/pause', stripeController.pauseSubscription);
+
+// POST /api/stripe/resume - Resume paused subscription
+router.post('/resume', stripeController.resumeSubscription);
+
 // Webhook is mounted in app.js with raw body (before express.json)
 
 module.exports = router;

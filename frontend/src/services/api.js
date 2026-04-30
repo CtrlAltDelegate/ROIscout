@@ -112,6 +112,11 @@ export const apiService = {
     return response.data;
   },
 
+  async recordZipView(zipCode) {
+    const response = await apiClient.post('/data/zip/view', { zipCode });
+    return response.data;
+  },
+
   // Map usage (for Mapbox load tracking / alerts)
   async recordMapLoad() {
     const response = await apiClient.post('/map/loaded');

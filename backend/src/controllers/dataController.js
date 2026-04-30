@@ -309,6 +309,69 @@ const dataController = {
   },
 
   /**
+   * Record a free-tier zip detail view. Returns usage status.
+   * Free users: max 10 views/month. Resets at the start of each calendar month.
+   */
+  async recordZipView(req, res) {
+    try {
+      const userId = req.user.id;
+      const plan = req.user.subscription_plan || req.user.plan || 'free';
+
+      // Paid users: unlimited — just confirm access
+      if (plan !== 'free') {
+        return res.json({ allowed: true, plan, viewsUsed: null, limit: null });
+      }
+
+      const FREE_LIMIT = 10;
+
+      // Load current counters
+      const userRow = await query(
+        'SELECT zip_views_this_month, zip_views_reset_date FROM users WHERE id = $1',
+        [userId]
+      );
+      if (!userRow.rows.length) return res.status(404).json({ error: 'User not found' });
+
+      let { zip_views_this_month: viewsUsed, zip_views_reset_date: resetDate } = userRow.rows[0];
+
+      // Reset counter if we're in a new calendar month
+      const now = new Date();
+      const reset = new Date(resetDate);
+      if (reset.getMonth() !== now.getMonth() || reset.getFullYear() !== now.getFullYear()) {
+        await query(
+          'UPDATE users SET zip_views_this_month = 0, zip_views_reset_date = CURRENT_DATE WHERE id = $1',
+          [userId]
+        );
+        viewsUsed = 0;
+      }
+
+      if (viewsUsed >= FREE_LIMIT) {
+        return res.status(403).json({
+          error: 'view_limit_reached',
+          allowed: false,
+          viewsUsed,
+          limit: FREE_LIMIT,
+        });
+      }
+
+      // Increment and allow
+      await query(
+        'UPDATE users SET zip_views_this_month = zip_views_this_month + 1 WHERE id = $1',
+        [userId]
+      );
+
+      return res.json({
+        allowed: true,
+        plan,
+        viewsUsed: viewsUsed + 1,
+        limit: FREE_LIMIT,
+      });
+    } catch (error) {
+      console.error('Record zip view error:', error);
+      res.status(500).json({ error: 'Failed to record view' });
+    }
+  },
+
+  /**
    * Get global dashboard summary stats
    */
   async getStats(req, res) {

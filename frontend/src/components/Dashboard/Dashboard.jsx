@@ -1,19 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
 import ROITableView from './ROITableView';
 import { apiService } from '../../services/api';
 
-const ROIscoutDashboard = () => {
+const ROIscoutDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('map');
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [isFirstVisit, setIsFirstVisit] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [zipViewCount, setZipViewCount] = useState(0);
+  const [topMarkets, setTopMarkets] = useState([]);
+  const [topMarketsLoading, setTopMarketsLoading] = useState(true);
 
+  const userPlan = user?.subscription_plan || user?.plan || 'free';
+  const isFree = userPlan === 'free';
+
+  // First-visit detection
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('roi_scout_visited');
+    if (!hasVisited) {
+      setIsFirstVisit(true);
+      localStorage.setItem('roi_scout_visited', 'true');
+    }
+  }, []);
+
+  // Dashboard stats
   useEffect(() => {
     apiService.getDashboardStats()
       .then(data => setStats(data))
       .catch(() => setStats(null))
       .finally(() => setStatsLoading(false));
   }, []);
+
+  // Top Markets — national top 10 by yield
+  useEffect(() => {
+    apiService.getPricingData({ limit: 10 })
+      .then(res => setTopMarkets(res.data || []))
+      .catch(() => setTopMarkets([]))
+      .finally(() => setTopMarketsLoading(false));
+  }, []);
+
+  // Show save prompt after 3 zip views (for free users)
+  const handleZipViewed = useCallback(() => {
+    setZipViewCount(prev => {
+      const next = prev + 1;
+      if (next >= 3 && isFree && !showSavePrompt) setShowSavePrompt(true);
+      return next;
+    });
+  }, [isFree, showSavePrompt]);
 
   const getIconEmoji = (id) => {
     const iconMap = {
@@ -90,11 +126,43 @@ const ROIscoutDashboard = () => {
 
 
   const renderTabContent = () => {
-    console.log('🎯 Rendering tab content for:', activeTab);
     switch (activeTab) {
       case 'map':
-        console.log('🗺️ Loading EnhancedROIHeatMap component...');
-        return <EnhancedROIHeatMap />;
+        return (
+          <>
+            {/* First-visit welcome banner */}
+            {isFirstVisit && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 flex items-start justify-between">
+                <div>
+                  <p className="font-semibold text-emerald-800">Welcome to ROI Scout</p>
+                  <p className="text-sm text-emerald-600 mt-0.5">
+                    Pick a state below to see which zip codes hit the 1% rule — or check the Top Markets panel for the best yields nationwide.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsFirstVisit(false)}
+                  className="text-emerald-400 hover:text-emerald-600 ml-4 flex-shrink-0 text-lg leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Free tier usage bar */}
+            {isFree && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between text-sm">
+                <span className="text-amber-700">
+                  <span className="font-semibold">{zipViewCount}/10</span> free zip views used this month
+                </span>
+                <Link to="/pricing" className="text-amber-700 font-semibold underline hover:text-amber-900">
+                  Upgrade for unlimited →
+                </Link>
+              </div>
+            )}
+
+            <EnhancedROIHeatMap user={user} onZipViewed={handleZipViewed} />
+          </>
+        );
       case 'list':
         return <ROITableView />;
       case 'analytics':
@@ -297,8 +365,32 @@ const ROIscoutDashboard = () => {
             />
           </nav>
 
+          {/* Top Markets panel */}
+          <div className="mt-6">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Top Markets</h3>
+            {topMarketsLoading ? (
+              <div className="text-xs text-gray-400">Loading...</div>
+            ) : topMarkets.length === 0 ? (
+              <div className="text-xs text-gray-400">No data</div>
+            ) : (
+              <div className="space-y-1.5">
+                {topMarkets.slice(0, 8).map((zip, i) => (
+                  <div key={zip.zip_code} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 w-4">{i + 1}.</span>
+                    <span className="font-medium text-gray-700 flex-1 ml-1">
+                      {zip.zip_code} <span className="text-gray-400 font-normal">{zip.state}</span>
+                    </span>
+                    <span className="font-semibold text-emerald-600">
+                      {parseFloat(zip.gross_rental_yield).toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Data info */}
-          <div className="mt-8 p-3 bg-blue-50 rounded-lg">
+          <div className="mt-6 p-3 bg-blue-50 rounded-lg">
             <div className="text-xs font-semibold text-blue-700 mb-1">Data Sources</div>
             <div className="text-xs text-blue-600">Zillow ZHVI & ZORI</div>
             <div className="text-xs text-blue-500 mt-1">
@@ -365,6 +457,28 @@ const ROIscoutDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Save prompt — shown after 3+ zip views for free users */}
+      {showSavePrompt && isFree && (
+        <div className="fixed bottom-6 right-6 bg-white shadow-xl rounded-2xl p-5 border border-gray-200 max-w-xs z-50">
+          <p className="font-semibold text-gray-800 text-sm">Save this search</p>
+          <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+            Track these markets and get notified when yields change. Available on Basic.
+          </p>
+          <Link
+            to="/pricing"
+            className="mt-3 block text-center bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+          >
+            Upgrade to Basic — $19.99/mo
+          </Link>
+          <button
+            onClick={() => setShowSavePrompt(false)}
+            className="mt-2 block w-full text-center text-xs text-gray-400 hover:text-gray-600"
+          >
+            Maybe later
+          </button>
+        </div>
+      )}
     </div>
   );
 };
