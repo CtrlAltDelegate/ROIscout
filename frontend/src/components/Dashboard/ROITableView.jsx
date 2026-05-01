@@ -1,22 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import FilterPanel from './FilterPanel';
 import ROITable from './ROITable';
+
+const FILTER_KEYS = ['state', 'county', 'zipCode', 'minPrice', 'maxPrice', 'minRent', 'propertyType'];
+
+/** Read filter values out of URLSearchParams, falling back to defaults. */
+function filtersFromParams(params) {
+  return {
+    state:        params.get('state')        || '',
+    county:       params.get('county')       || '',
+    zipCode:      params.get('zipCode')      || '',
+    minPrice:     params.get('minPrice')     || '',
+    maxPrice:     params.get('maxPrice')     || '',
+    minRent:      params.get('minRent')      || '',
+    propertyType: params.get('propertyType') || '3bed2bath',
+  };
+}
 
 /**
  * ROI table view: filters + pricing data from API with Data Freshness badge.
  * Displays "Data last updated: [month/year]" and tooltip (Zillow, HUD, Census).
  */
 const ROITableView = () => {
-  const [filters, setFilters] = useState({
-    state: '',
-    county: '',
-    zipCode: '',
-    minPrice: '',
-    maxPrice: '',
-    minRent: '',
-    propertyType: '3bed2bath',
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [filters, setFilters] = useState(() => filtersFromParams(searchParams));
   const [data, setData] = useState([]);
   const [dataLastUpdated, setDataLastUpdated] = useState(null);
   const [dataSources, setDataSources] = useState(null);
@@ -51,6 +61,27 @@ const ROITableView = () => {
     fetchData();
   }, [fetchData]);
 
+  const handleFilterChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+    // Sync to URL — keep non-filter params (e.g. tab=) intact
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      // Set tab so shared links open directly to the table view
+      next.set('tab', 'list');
+      FILTER_KEYS.forEach(key => {
+        const val = newFilters[key];
+        if (val && val !== '3bed2bath') {
+          next.set(key, val);
+        } else if (key === 'propertyType' && val === '3bed2bath') {
+          next.delete(key); // default — omit from URL to keep it clean
+        } else {
+          next.delete(key);
+        }
+      });
+      return next;
+    });
+  }, [setSearchParams]);
+
   const handleSaveSearch = async (name) => {
     try {
       await apiService.saveSearch({ searchName: name, filters });
@@ -68,7 +99,7 @@ const ROITableView = () => {
         </p>
         <FilterPanel
           filters={filters}
-          onFilterChange={setFilters}
+          onFilterChange={handleFilterChange}
           onSaveSearch={handleSaveSearch}
         />
       </div>

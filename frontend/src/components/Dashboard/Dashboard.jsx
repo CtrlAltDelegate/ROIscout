@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
 import ROITableView from './ROITableView';
 import { apiService } from '../../services/api';
 
+const VALID_TABS = ['map', 'list', 'analytics', 'saved'];
+
 const ROIscoutDashboard = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('map');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get('tab');
+    return VALID_TABS.includes(tab) ? tab : 'map';
+  });
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [isFirstVisit, setIsFirstVisit] = useState(false);

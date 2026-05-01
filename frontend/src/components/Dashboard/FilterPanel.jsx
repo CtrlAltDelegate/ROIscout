@@ -7,6 +7,7 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
   const [zipCodes, setZipCodes] = useState([]);
   const [saveSearchName, setSaveSearchName] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Load states on component mount
   useEffect(() => {
@@ -79,6 +80,13 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
       setSaveSearchName('');
       setShowSaveModal(false);
     }
+  };
+
+  const handleShareView = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    });
   };
 
   const clearFilters = () => {
@@ -227,14 +235,26 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
           />
         </div>
 
-        {/* Save Search Button */}
+        {/* Save Search + Share buttons */}
         {filters.state && (
-          <button
-            onClick={() => setShowSaveModal(true)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
-          >
-            💾 Save This Search
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowSaveModal(true)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors text-sm"
+            >
+              💾 Save Search
+            </button>
+            <button
+              onClick={handleShareView}
+              className={`flex-1 py-2 px-4 rounded-lg transition-colors text-sm font-medium border ${
+                linkCopied
+                  ? 'bg-green-600 border-green-600 text-white'
+                  : 'bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-200'
+              }`}
+            >
+              {linkCopied ? '✓ Link copied!' : '🔗 Share this view'}
+            </button>
+          </div>
         )}
       </div>
 
