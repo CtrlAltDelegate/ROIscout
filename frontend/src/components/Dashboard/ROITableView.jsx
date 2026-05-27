@@ -23,8 +23,9 @@ function filtersFromParams(params) {
  * ROI table view: filters + pricing data from API with Data Freshness badge.
  * Displays "Data last updated: [month/year]" and tooltip (Zillow, HUD, Census).
  */
-const ROITableView = () => {
+const ROITableView = ({ user }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const isPro = (user?.subscription_plan || user?.plan) === 'pro';
 
   const [filters, setFilters] = useState(() => filtersFromParams(searchParams));
   const [data, setData] = useState([]);
@@ -32,6 +33,8 @@ const ROITableView = () => {
   const [dataSources, setDataSources] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
 
   const fetchData = useCallback(async () => {
     if (!filters.state) {
@@ -82,6 +85,19 @@ const ROITableView = () => {
     });
   }, [setSearchParams]);
 
+  const handleExportCSV = async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await apiService.exportCSV(filters);
+    } catch (e) {
+      const msg = e.response?.data?.message || e.message || 'Export failed';
+      setExportError(msg);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleSaveSearch = async (name) => {
     try {
       await apiService.saveSearch({ searchName: name, filters });
@@ -93,10 +109,45 @@ const ROITableView = () => {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="p-6 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">ROI by Zip Code</h2>
-        <p className="text-gray-600 text-sm mb-4">
-          Select a state to load zip-level data. The table shows median price, rent, and ROI metrics.
-        </p>
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">ROI by Zip Code</h2>
+            <p className="text-gray-600 text-sm mt-1">
+              Select a state to load zip-level data. The table shows median price, rent, and ROI metrics.
+            </p>
+          </div>
+          {filters.state && data.length > 0 && (
+            <div className="flex flex-col items-end gap-1 ml-4 flex-shrink-0">
+              {isPro ? (
+                <button
+                  onClick={handleExportCSV}
+                  disabled={exporting}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  {exporting ? (
+                    <>
+                      <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block" />
+                      Exporting…
+                    </>
+                  ) : (
+                    <>⬇ Export CSV</>
+                  )}
+                </button>
+              ) : (
+                <a
+                  href="/pricing"
+                  className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-lg border border-gray-300 transition-colors"
+                  title="CSV export is a Pro feature"
+                >
+                  🔒 Export CSV <span className="text-xs text-blue-600 font-semibold">Pro</span>
+                </a>
+              )}
+              {exportError && (
+                <p className="text-red-500 text-xs mt-1 text-right max-w-xs">{exportError}</p>
+              )}
+            </div>
+          )}
+        </div>
         <FilterPanel
           filters={filters}
           onFilterChange={handleFilterChange}

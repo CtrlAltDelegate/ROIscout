@@ -89,18 +89,37 @@ const SimpleLandingPage = () => {
         {/* About — founder story (credibility asset) */}
         <section className="mb-20" aria-label="About">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 md:p-12 max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">About</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why I built this</h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              ROI Scout is built by an investor, for investors. The metrics and filters — zip-level data,
-              the 1% rule, gross rental yield — match how we actually evaluate our next market. No fluff,
-              no generic dashboards; just the numbers that matter when you’re comparing opportunities.
+              For years, my market research looked like this: two Zillow tabs open side by side. One filtered
+              for active rentals in a city, one for homes for sale in that same city. I&apos;d manually cross-reference
+              the two — find a neighborhood where rents were strong, find a property in that same neighborhood
+              at the right price point, then open a spreadsheet and start the math.
             </p>
-            <p className="text-gray-700 leading-relaxed">
-              I built ROI Scout after spending too much time in spreadsheets and listing sites trying to
-              answer one question: where should I look next? Your real estate background is a credibility
-              asset — add a line or two here about your experience (e.g. markets you’ve invested in, doors
-              you own, or why you built this tool) so visitors know they’re in good hands.
+            <p className="text-gray-700 leading-relaxed mb-4">
+              I did that for 500+ deals. Long-term rentals in Indianapolis. Short-term and medium-term rentals
+              in Southern California. I went through the full cycle on all of them — bought, managed, sold.
+              The strategy evolved. The two-tab ritual never did.
             </p>
+            <p className="text-gray-700 leading-relaxed mb-6">
+              What I wanted was simple: one map that overlaid both sides of the equation — what homes cost
+              and what they rent for, by zip code, with the yield math already done. That tool didn&apos;t exist.
+              So I built it.
+            </p>
+            <div className="border-t border-gray-100 pt-6 flex flex-wrap gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">500+</div>
+                <div className="text-sm text-gray-500 mt-1">Deals analyzed</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">3</div>
+                <div className="text-sm text-gray-500 mt-1">Strategies (LTR, STR, MTR)</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">2 markets</div>
+                <div className="text-sm text-gray-500 mt-1">Indianapolis &amp; Southern California</div>
+              </div>
+            </div>
           </div>
         </section>
 

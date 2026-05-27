@@ -36,6 +36,25 @@ const schemas = {
       }),
   }),
 
+  forgotPassword: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+  }),
+
+  resetPassword: Joi.object({
+    token: Joi.string().hex().length(64).required().messages({
+      'any.required': 'Reset token is required',
+      'string.length': 'Invalid reset token',
+    }),
+    password: Joi.string().min(6).max(128).required().messages({
+      'string.min': 'Password must be at least 6 characters long',
+      'string.max': 'Password must be less than 128 characters',
+      'any.required': 'Password is required',
+    }),
+  }),
+
   saveSearch: Joi.object({
     searchName: Joi.string()
       .min(1)
@@ -92,6 +111,30 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
+const validateForgotPassword = (req, res, next) => {
+  const { error } = schemas.forgotPassword.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: error.details[0].message,
+      field: error.details[0].path[0],
+    });
+  }
+  next();
+};
+
+const validateResetPassword = (req, res, next) => {
+  const { error } = schemas.resetPassword.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: error.details[0].message,
+      field: error.details[0].path[0],
+    });
+  }
+  next();
+};
+
 const validateSaveSearch = (req, res, next) => {
   const { error } = schemas.saveSearch.validate(req.body);
   if (error) {
@@ -107,5 +150,7 @@ const validateSaveSearch = (req, res, next) => {
 module.exports = {
   validateSignup,
   validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
   validateSaveSearch,
 };

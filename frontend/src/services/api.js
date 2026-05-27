@@ -107,6 +107,25 @@ export const apiService = {
     return response.data;
   },
 
+  async exportCSV(filters) {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    const response = await apiClient.get(`/export/csv?${params}`, {
+      responseType: 'blob',
+    });
+    // Trigger browser download
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roiscout-${filters.state || 'export'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   async getDashboardStats() {
     const response = await apiClient.get('/data/stats');
     return response.data;

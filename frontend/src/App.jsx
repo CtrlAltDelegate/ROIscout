@@ -7,6 +7,8 @@ import Header from './components/Layout/Header';
 import SimpleLandingPage from './components/Landing/SimpleLandingPage';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
+import ForgotPassword from './components/Auth/ForgotPassword';
+import ResetPassword from './components/Auth/ResetPassword';
 import Dashboard from './components/Dashboard/Dashboard';
 import TermsOfService from './components/Legal/TermsOfService';
 import PrivacyPolicy from './components/Legal/PrivacyPolicy';
@@ -77,6 +79,8 @@ function App() {
             path="/dashboard" 
             element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} 
           />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/pricing" element={<PricingPage user={user} />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

@@ -109,9 +109,14 @@ const Login = ({ onLogin }) => {
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
-              Password
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-gray-300 text-sm font-semibold">
+                Password
+              </label>
+              <Link to="/forgot-password" className="text-xs text-green-400 hover:text-green-300">
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               name="password"

@@ -1,6 +1,11 @@
 const express = require('express');
 const authController = require('../controllers/authController');
-const { validateSignup, validateLogin } = require('../middleware/validation');
+const {
+  validateSignup,
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+} = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -16,5 +21,11 @@ router.get('/profile', authenticateToken, authController.getProfile);
 
 // POST /api/auth/google - Google OAuth login
 router.post('/google', authController.googleLogin);
+
+// POST /api/auth/forgot-password - Request password reset email
+router.post('/forgot-password', validateForgotPassword, authController.forgotPassword);
+
+// POST /api/auth/reset-password - Set new password using token
+router.post('/reset-password', validateResetPassword, authController.resetPassword);
 
 module.exports = router;

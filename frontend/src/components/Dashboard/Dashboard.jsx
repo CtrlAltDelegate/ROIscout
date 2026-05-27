@@ -170,7 +170,7 @@ const ROIscoutDashboard = ({ user }) => {
           </>
         );
       case 'list':
-        return <ROITableView />;
+        return <ROITableView user={user} />;
       case 'analytics':
         return (
           <div className="bg-white rounded-lg shadow-lg p-6">

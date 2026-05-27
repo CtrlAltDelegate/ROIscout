@@ -50,6 +50,16 @@ export const authService = {
     return response.data.user;
   },
 
+  async forgotPassword(email) {
+    const response = await authClient.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  async resetPassword(token, password) {
+    const response = await authClient.post('/auth/reset-password', { token, password });
+    return response.data;
+  },
+
   logout() {
     localStorage.removeItem('token');
   },
