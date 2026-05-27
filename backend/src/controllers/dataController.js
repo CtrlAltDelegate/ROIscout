@@ -372,6 +372,54 @@ const dataController = {
   },
 
   /**
+   * Get analytics data: yield histogram + top states by avg yield
+   */
+  async getAnalytics(req, res) {
+    try {
+      const [histogramResult, statesResult] = await Promise.all([
+        query(`
+          SELECT
+            CASE
+              WHEN gross_rental_yield <  4  THEN 'Under 4%'
+              WHEN gross_rental_yield <  6  THEN '4–6%'
+              WHEN gross_rental_yield <  8  THEN '6–8%'
+              WHEN gross_rental_yield < 10  THEN '8–10%'
+              WHEN gross_rental_yield < 12  THEN '10–12%'
+              ELSE '12%+'
+            END                            AS bucket,
+            COUNT(*)::int                  AS count,
+            MIN(gross_rental_yield)        AS bucket_min
+          FROM zip_data
+          WHERE gross_rental_yield > 0 AND median_price > 0
+          GROUP BY bucket
+          ORDER BY MIN(gross_rental_yield)
+        `),
+        query(`
+          SELECT
+            state,
+            ROUND(AVG(gross_rental_yield)::numeric, 2)  AS avg_yield,
+            ROUND(AVG(median_price)::numeric, 0)        AS avg_price,
+            ROUND(AVG(median_rent)::numeric, 0)         AS avg_rent,
+            COUNT(*)::int                               AS zip_count
+          FROM zip_data
+          WHERE gross_rental_yield > 0 AND median_price > 0
+          GROUP BY state
+          ORDER BY avg_yield DESC
+          LIMIT 15
+        `),
+      ]);
+
+      res.json({
+        yieldHistogram: histogramResult.rows,
+        topStates: statesResult.rows,
+      });
+    } catch (error) {
+      console.error('Get analytics error:', error);
+      res.status(500).json({ error: 'Failed to get analytics' });
+    }
+  },
+
+  /**
    * Get global dashboard summary stats
    */
   async getStats(req, res) {

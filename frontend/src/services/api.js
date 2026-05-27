@@ -131,6 +131,11 @@ export const apiService = {
     return response.data;
   },
 
+  async getAnalytics() {
+    const response = await apiClient.get('/data/analytics');
+    return response.data;
+  },
+
   async recordZipView(zipCode) {
     const response = await apiClient.post('/data/zip/view', { zipCode });
     return response.data;

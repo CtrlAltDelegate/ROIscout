@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+} from 'recharts';
 import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
 import ROITableView from './ROITableView';
 import { apiService } from '../../services/api';
@@ -19,6 +22,8 @@ const ROIscoutDashboard = ({ user }) => {
   const [zipViewCount, setZipViewCount] = useState(0);
   const [topMarkets, setTopMarkets] = useState([]);
   const [topMarketsLoading, setTopMarketsLoading] = useState(true);
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   const userPlan = user?.subscription_plan || user?.plan || 'free';
   const isFree = userPlan === 'free';
@@ -47,6 +52,16 @@ const ROIscoutDashboard = ({ user }) => {
       .catch(() => setTopMarkets([]))
       .finally(() => setTopMarketsLoading(false));
   }, []);
+
+  // Analytics — lazy-load when the tab is first opened
+  useEffect(() => {
+    if (activeTab !== 'analytics' || analytics !== null || analyticsLoading) return;
+    setAnalyticsLoading(true);
+    apiService.getAnalytics()
+      .then(data => setAnalytics(data))
+      .catch(() => setAnalytics(null))
+      .finally(() => setAnalyticsLoading(false));
+  }, [activeTab, analytics, analyticsLoading]);
 
   // Show save prompt after 3 zip views (for free users)
   const handleZipViewed = useCallback(() => {
@@ -171,51 +186,137 @@ const ROIscoutDashboard = ({ user }) => {
         );
       case 'list':
         return <ROITableView user={user} />;
-      case 'analytics':
+      case 'analytics': {
+        // Colour each yield histogram bar by investment quality
+        const bucketColor = (bucket) => {
+          if (bucket === 'Under 4%') return '#94a3b8'; // slate
+          if (bucket === '4–6%')    return '#60a5fa'; // blue
+          if (bucket === '6–8%')    return '#34d399'; // emerald
+          if (bucket === '8–10%')   return '#fbbf24'; // amber
+          if (bucket === '10–12%')  return '#f97316'; // orange
+          return '#ef4444';                            // red (12%+ = rare/risky markets)
+        };
+
         return (
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">Market Analytics</h3>
-            
-            {/* Quick metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
-                <div className="text-blue-600 text-sm font-medium">Avg Gross Yield</div>
-                <div className="text-2xl font-bold text-blue-800">
+          <div className="space-y-6">
+            {/* Summary tiles */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl">
+                <div className="text-blue-600 text-xs font-semibold uppercase tracking-wide">Avg Gross Yield</div>
+                <div className="text-3xl font-bold text-blue-900 mt-1">
                   {stats ? `${stats.avgYield}%` : '—'}
                 </div>
-                <div className="text-blue-600 text-sm">Across all tracked zips</div>
+                <div className="text-blue-600 text-xs mt-1">Across all tracked zips</div>
               </div>
-              <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg">
-                <div className="text-green-600 text-sm font-medium">Exceptional ZIPs (≥10%)</div>
-                <div className="text-2xl font-bold text-green-800">
+              <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 p-4 rounded-xl">
+                <div className="text-emerald-600 text-xs font-semibold uppercase tracking-wide">Exceptional ZIPs ≥10%</div>
+                <div className="text-3xl font-bold text-emerald-900 mt-1">
                   {stats ? stats.exceptionalCount.toLocaleString() : '—'}
                 </div>
-                <div className="text-green-600 text-sm">
-                  {stats ? `${((stats.exceptionalCount / stats.totalZips) * 100).toFixed(1)}% of tracked zips` : ''}
+                <div className="text-emerald-600 text-xs mt-1">
+                  {stats ? `${((stats.exceptionalCount / stats.totalZips) * 100).toFixed(1)}% of universe` : ''}
                 </div>
               </div>
-              <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg">
-                <div className="text-purple-600 text-sm font-medium">States Covered</div>
-                <div className="text-2xl font-bold text-purple-800">
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl">
+                <div className="text-purple-600 text-xs font-semibold uppercase tracking-wide">States Covered</div>
+                <div className="text-3xl font-bold text-purple-900 mt-1">
                   {stats ? stats.statesCovered : '—'}
                 </div>
-                <div className="text-purple-600 text-sm">
+                <div className="text-purple-600 text-xs mt-1">
                   {stats ? `${stats.totalZips.toLocaleString()} zip codes total` : ''}
                 </div>
               </div>
             </div>
 
-            {/* Chart placeholder */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <div className="mx-auto text-gray-400 mb-4" style={{ fontSize: '48px' }}>📊</div>
-              <h4 className="text-lg font-semibold text-gray-600 mb-2">Market Trends Chart</h4>
-              <p className="text-gray-500">Price-to-rent ratio trends over time</p>
-              <p className="text-sm text-gray-400 mt-2">
-                📈 Integration point for Chart.js or Recharts
-              </p>
-            </div>
+            {analyticsLoading && (
+              <div className="flex items-center justify-center h-48 bg-white rounded-xl shadow-sm border border-gray-100">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-500 border-t-transparent" />
+              </div>
+            )}
+
+            {!analyticsLoading && analytics && (
+              <>
+                {/* Yield distribution histogram */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="text-base font-semibold text-gray-800 mb-1">Yield Distribution</h3>
+                  <p className="text-xs text-gray-500 mb-5">How many zip codes fall in each gross yield bucket</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={analytics.yieldHistogram} barCategoryGap="30%">
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="bucket" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}
+                             tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(1)}k` : v} />
+                      <Tooltip
+                        formatter={(value) => [value.toLocaleString(), 'Zip codes']}
+                        contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+                      />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                        {analytics.yieldHistogram.map((entry) => (
+                          <Cell key={entry.bucket} fill={bucketColor(entry.bucket)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="flex flex-wrap gap-3 mt-3">
+                    {analytics.yieldHistogram.map(b => (
+                      <div key={b.bucket} className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: bucketColor(b.bucket) }} />
+                        {b.bucket}: <span className="font-medium text-gray-700">{b.count.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top states by avg yield */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h3 className="text-base font-semibold text-gray-800 mb-1">Top States by Average Yield</h3>
+                  <p className="text-xs text-gray-500 mb-5">Average gross rental yield across all tracked zip codes per state</p>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={analytics.topStates}
+                      layout="vertical"
+                      margin={{ left: 8, right: 24 }}
+                      barCategoryGap="25%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}
+                             tickFormatter={v => `${v}%`} domain={[0, 'dataMax + 1']} />
+                      <YAxis type="category" dataKey="state" tick={{ fontSize: 12, fill: '#374151' }}
+                             axisLine={false} tickLine={false} width={28} />
+                      <Tooltip
+                        formatter={(value, name) => {
+                          if (name === 'avg_yield') return [`${value}%`, 'Avg yield'];
+                          return [value, name];
+                        }}
+                        contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+                      />
+                      <Bar dataKey="avg_yield" radius={[0, 4, 4, 0]} fill="#10b981">
+                        {analytics.topStates.map((entry) => (
+                          <Cell
+                            key={entry.state}
+                            fill={entry.avg_yield >= 10 ? '#f97316' : entry.avg_yield >= 8 ? '#fbbf24' : '#10b981'}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <p className="text-xs text-gray-400 mt-2">
+                    <span className="inline-block w-2 h-2 rounded-sm bg-orange-500 mr-1" />≥10% &nbsp;
+                    <span className="inline-block w-2 h-2 rounded-sm bg-amber-400 mr-1" />8–10% &nbsp;
+                    <span className="inline-block w-2 h-2 rounded-sm bg-emerald-500 mr-1" />&lt;8%
+                  </p>
+                </div>
+              </>
+            )}
+
+            {!analyticsLoading && !analytics && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-gray-400">
+                Could not load analytics data. Try refreshing.
+              </div>
+            )}
           </div>
         );
+      }
       case 'saved':
         return (
           <div className="bg-white rounded-lg shadow-lg p-6">

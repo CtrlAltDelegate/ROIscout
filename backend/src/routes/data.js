@@ -50,6 +50,12 @@ router.get('/stats',
   dataController.getStats
 );
 
+// GET /api/data/analytics - Yield histogram + top states (cached for 1 hour)
+router.get('/analytics',
+  cacheService.middleware('analytics', 60 * 60),
+  dataController.getAnalytics
+);
+
 // POST /api/data/zip/view - Record a free-tier zip detail view (auth required)
 router.post('/zip/view', authenticateToken, dataController.recordZipView);
 
