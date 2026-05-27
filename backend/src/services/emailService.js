@@ -51,22 +51,31 @@ const emailService = {
       return;
     }
 
-    await axios.post(
-      'https://api.resend.com/emails',
-      {
-        from: FROM_ADDRESS,
-        to: [toEmail],
-        subject,
-        html,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+    try {
+      const response = await axios.post(
+        'https://api.resend.com/emails',
+        {
+          from: FROM_ADDRESS,
+          to: [toEmail],
+          subject,
+          html,
         },
-        timeout: 10000,
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000,
+        }
+      );
+      console.log('✅ Resend email sent, id:', response.data?.id);
+    } catch (err) {
+      // Surface Resend's JSON error body for easier debugging
+      const detail = err.response?.data
+        ? JSON.stringify(err.response.data)
+        : err.message;
+      throw new Error(`Resend API error (${err.response?.status ?? 'network'}): ${detail}`);
+    }
   },
 };
 

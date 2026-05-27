@@ -200,7 +200,16 @@ const authController = {
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
-        await emailService.sendPasswordResetEmail(user.email, resetUrl);
+        // Non-fatal — a delivery failure should never turn into a 500
+        try {
+          await emailService.sendPasswordResetEmail(user.email, resetUrl);
+        } catch (emailErr) {
+          console.error('⚠️  Password reset email failed to send:', emailErr.message);
+          // In dev/staging, print the link so it can still be tested
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('🔗 Reset URL (fallback):', resetUrl);
+          }
+        }
       }
 
       // Always respond the same way — don't reveal whether the email exists
