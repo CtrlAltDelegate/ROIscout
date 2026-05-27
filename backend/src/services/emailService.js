@@ -1,23 +1,13 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 /**
- * Returns a nodemailer transporter if SMTP env vars are configured,
- * otherwise null (dev / test environments).
+ * Email service using Resend's HTTP API (port 443 — never blocked by firewalls).
+ * Set RESEND_API_KEY in Railway env vars.
+ * Falls back to console-logging the link in dev when no key is present.
  */
-function createTransporter() {
-  const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
-
-  return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true', // true for port 465
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-}
 
 const FROM_ADDRESS =
-  process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@roiscout.com';
+  process.env.RESEND_FROM || 'ROI Scout <onboarding@resend.dev>';
 
 const emailService = {
   /**
@@ -50,10 +40,10 @@ const emailService = {
       </div>
     `;
 
-    const transporter = createTransporter();
+    const apiKey = process.env.RESEND_API_KEY;
 
-    if (!transporter) {
-      // Dev/test fallback — log the link so you can test without SMTP
+    if (!apiKey) {
+      // Dev fallback — log reset link to console
       console.log('\n========== PASSWORD RESET (dev mode) ==========');
       console.log(`To: ${toEmail}`);
       console.log(`Reset URL: ${resetUrl}`);
@@ -61,12 +51,22 @@ const emailService = {
       return;
     }
 
-    await transporter.sendMail({
-      from: FROM_ADDRESS,
-      to: toEmail,
-      subject,
-      html,
-    });
+    await axios.post(
+      'https://api.resend.com/emails',
+      {
+        from: FROM_ADDRESS,
+        to: [toEmail],
+        subject,
+        html,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      }
+    );
   },
 };
 
