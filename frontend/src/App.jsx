@@ -13,6 +13,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import TermsOfService from './components/Legal/TermsOfService';
 import PrivacyPolicy from './components/Legal/PrivacyPolicy';
 import PricingPage from './components/Pricing/PricingPage';
+import AdminDashboard from './components/Admin/AdminDashboard';
 
 // Services
 import { authService } from './services/auth';
@@ -84,6 +85,7 @@ function App() {
           <Route path="/pricing" element={<PricingPage user={user} />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/admin" element={user ? <AdminDashboard /> : <Navigate to="/login" />} />
         </Routes>
       </div>
     </Router>

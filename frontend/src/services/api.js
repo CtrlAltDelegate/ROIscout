@@ -136,6 +136,22 @@ export const apiService = {
     return response.data;
   },
 
+  async subscribe(email) {
+    const response = await apiClient.post('/subscribe', { email });
+    return response.data;
+  },
+
+  // Admin
+  async getAdminStats() {
+    const response = await apiClient.get('/admin/stats');
+    return response.data;
+  },
+
+  async clearAdminCache() {
+    const response = await apiClient.post('/admin/cache/clear');
+    return response.data;
+  },
+
   async recordZipView(zipCode) {
     const response = await apiClient.post('/data/zip/view', { zipCode });
     return response.data;

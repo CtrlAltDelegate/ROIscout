@@ -165,58 +165,58 @@ router.post('/refresh-views', async (req, res) => {
 // GET /api/admin/stats - System statistics
 router.get('/stats', async (req, res) => {
   try {
-    // Get various system statistics
-    const userStats = await query(`
-      SELECT 
-        COUNT(*) as total_users,
-        COUNT(*) FILTER (WHERE subscription_status != 'free') as paid_users,
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days') as new_users_30d,
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days') as new_users_7d
-      FROM users
-    `);
-
-    const propertyStats = await query(`
-      SELECT 
-        COUNT(*) as total_properties,
-        COUNT(*) FILTER (WHERE is_active = true) as active_properties,
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days') as new_properties_30d,
-        AVG(price_to_rent_ratio) FILTER (WHERE price_to_rent_ratio > 0) as avg_ratio
-      FROM properties
-    `);
-
-    const usageStats = await query(`
-      SELECT 
-        action_type,
-        COUNT(*) as total_actions,
-        COUNT(DISTINCT user_id) as unique_users,
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days') as actions_30d
-      FROM usage_records
-      GROUP BY action_type
-      ORDER BY total_actions DESC
-    `);
-
-    const subscriptionStats = await query(`
-      SELECT 
-        status,
-        COUNT(*) as count
-      FROM subscriptions
-      GROUP BY status
-    `);
+    const [userStats, planBreakdown, recentUsers, subStats, dataStats, subscriberCount] =
+      await Promise.all([
+        query(`
+          SELECT
+            COUNT(*)::int                                                           AS total_users,
+            COUNT(*) FILTER (WHERE subscription_plan != 'free')::int               AS paid_users,
+            COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days')::int   AS new_users_30d,
+            COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days')::int    AS new_users_7d
+          FROM users
+        `),
+        query(`
+          SELECT
+            COALESCE(subscription_plan, 'free') AS plan,
+            COUNT(*)::int                        AS count
+          FROM users
+          GROUP BY plan
+          ORDER BY count DESC
+        `),
+        query(`
+          SELECT id, email, subscription_plan, created_at
+          FROM users
+          ORDER BY created_at DESC
+          LIMIT 10
+        `),
+        query(`
+          SELECT status, COUNT(*)::int AS count
+          FROM subscriptions
+          GROUP BY status
+        `),
+        query(`
+          SELECT
+            COUNT(*)::int                                          AS total_zips,
+            COUNT(DISTINCT state)::int                            AS states,
+            MAX(last_updated)                                     AS last_refresh
+          FROM zip_data
+          WHERE median_price > 0
+        `),
+        query(`SELECT COUNT(*)::int AS count FROM email_subscribers`).catch(() => ({ rows: [{ count: 0 }] })),
+      ]);
 
     res.json({
-      users: userStats.rows[0],
-      properties: propertyStats.rows[0],
-      usage: usageStats.rows,
-      subscriptions: subscriptionStats.rows,
-      timestamp: new Date().toISOString()
+      users:           userStats.rows[0],
+      planBreakdown:   planBreakdown.rows,
+      recentUsers:     recentUsers.rows,
+      subscriptions:   subStats.rows,
+      data:            dataStats.rows[0],
+      subscribers:     subscriberCount.rows[0].count,
+      timestamp:       new Date().toISOString(),
     });
-
   } catch (error) {
-    console.error('Get stats error:', error);
-    res.status(500).json({
-      error: 'Failed to get system statistics',
-      message: error.message
-    });
+    console.error('Get admin stats error:', error);
+    res.status(500).json({ error: 'Failed to get stats', message: error.message });
   }
 });
 

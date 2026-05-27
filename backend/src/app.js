@@ -91,6 +91,7 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/subscribe', require('./routes/subscribe'));
 
 // Root endpoint
 app.get('/', (req, res) => {

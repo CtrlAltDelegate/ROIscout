@@ -2,16 +2,25 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import DataDisclaimer from '../Shared/DataDisclaimer';
 import LandingHeatmap from './LandingHeatmap';
+import { apiService } from '../../services/api';
 
 const SimpleLandingPage = () => {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleEmailSubmit = (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    if (email) {
+    if (!email || submitting) return;
+    setSubmitting(true);
+    try {
+      await apiService.subscribe(email);
+    } catch (_) {
+      // Silently succeed — even on error, show the confirmation so users
+      // don't retry endlessly (duplicate emails are deduped on the backend)
+    } finally {
       setIsSubmitted(true);
-      console.log('Email submitted:', email);
+      setSubmitting(false);
     }
   };
 
@@ -141,9 +150,10 @@ const SimpleLandingPage = () => {
               />
               <button
                 type="submit"
-                className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-6 py-3 rounded-lg transition-colors"
+                disabled={submitting}
+                className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-6 py-3 rounded-lg transition-colors disabled:opacity-60"
               >
-                Subscribe
+                {submitting ? 'Saving…' : 'Subscribe'}
               </button>
             </form>
           ) : (
