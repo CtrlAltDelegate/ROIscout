@@ -65,7 +65,7 @@ const dataController = {
       conditions.push('median_rent > 0');
 
       const queryText = `
-        SELECT 
+        SELECT
           zip_code,
           state,
           county,
@@ -74,8 +74,10 @@ const dataController = {
           rent_to_price_ratio,
           gross_rental_yield,
           grm,
+          lat,
+          lng,
           last_updated
-        FROM zip_data 
+        FROM zip_data
         WHERE ${conditions.join(' AND ')}
         ORDER BY gross_rental_yield DESC NULLS LAST
         LIMIT ${Math.min(parseInt(req.query.limit) || 500, 500)}

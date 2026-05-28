@@ -125,6 +125,14 @@ async function main() {
     console.log(`   Avg gross yield: ${s.avg_yield}%`);
     console.log(`   Data timestamp:  ${s.last_updated}`);
 
+    // Trigger Pro user yield alerts after fresh data lands
+    try {
+      const { checkAndSendAlerts } = require('../src/services/alertService');
+      await checkAndSendAlerts();
+    } catch (alertErr) {
+      console.warn('⚠️  Alert check skipped:', alertErr.message);
+    }
+
   } catch (err) {
     console.error('\n❌ Refresh failed:', err.message);
     process.exit(1);

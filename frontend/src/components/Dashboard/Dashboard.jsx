@@ -7,7 +7,7 @@ import {
   Map, Search, BarChart2, Bookmark, Calculator,
   TrendingUp, Building2, Target, Zap, Info,
 } from 'lucide-react';
-import EnhancedROIHeatMap from '../Map/EnhancedROIHeatMap';
+import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
 import { apiService } from '../../services/api';
 
@@ -122,7 +122,7 @@ const ROIscoutDashboard = ({ user }) => {
                 </Link>
               </div>
             )}
-            <EnhancedROIHeatMap user={user} onZipViewed={handleZipViewed} />
+            <MapboxROIMap user={user} onZipViewed={handleZipViewed} />
           </div>
         );
 

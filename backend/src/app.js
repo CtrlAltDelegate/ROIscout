@@ -92,6 +92,7 @@ app.use('/api/map', mapRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/subscribe', require('./routes/subscribe'));
+app.use('/api/alerts',   require('./routes/alerts'));
 
 // Root endpoint
 app.get('/', (req, res) => {

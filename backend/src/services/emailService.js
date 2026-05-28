@@ -11,6 +11,28 @@ const FROM_ADDRESS =
 
 const emailService = {
   /**
+   * Generic email send via Resend.
+   * @param {object} opts
+   * @param {string}  opts.to      - recipient address
+   * @param {string}  opts.subject - email subject
+   * @param {string}  opts.html    - HTML body
+   * @param {string}  [opts.text]  - plain-text fallback
+   */
+  async sendEmail({ to, subject, html, text }) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.log('⚠️  RESEND_API_KEY not set — email not sent:', subject);
+      return;
+    }
+    const response = await axios.post(
+      'https://api.resend.com/emails',
+      { from: FROM_ADDRESS, to: [to], subject, html, ...(text ? { text } : {}) },
+      { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 15000 }
+    );
+    console.log('✅ Resend email sent, id:', response.data?.id);
+  },
+
+  /**
    * Send a password-reset email.
    * @param {string} toEmail  - recipient
    * @param {string} resetUrl - full https://... URL with token param
