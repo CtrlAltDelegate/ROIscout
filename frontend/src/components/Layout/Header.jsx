@@ -81,6 +81,15 @@ const Header = ({ user, onLogout }) => {
                     >
                       {subscription?.status === 'active' ? 'Manage subscription' : 'Upgrade plan'}
                     </Link>
+                    {user?.is_admin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="block px-4 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 transition-colors"
+                      >
+                        ⚙️ Admin Dashboard
+                      </Link>
+                    )}
                     <div className="border-t border-slate-700 mt-1">
                       <button
                         onClick={handleLogout}

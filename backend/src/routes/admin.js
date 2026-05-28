@@ -26,9 +26,9 @@ const requireAdmin = async (req, res, next) => {
 
     // For now, check if email contains 'admin' or is in admin list
     const email = result.rows[0].email;
-    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',');
-    
-    if (!email.includes('admin') && !adminEmails.includes(email)) {
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
+
+    if (!email.includes('admin') && !adminEmails.includes(email.toLowerCase())) {
       return res.status(403).json({ 
         error: 'Access Denied',
         message: 'Admin privileges required'

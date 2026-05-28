@@ -85,7 +85,13 @@ function App() {
           <Route path="/pricing" element={<PricingPage user={user} />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/admin" element={user ? <AdminDashboard /> : <Navigate to="/login" />} />
+          <Route path="/admin" element={
+            user?.is_admin
+              ? <AdminDashboard user={user} />
+              : user
+              ? <Navigate to="/dashboard" />
+              : <Navigate to="/login" />
+          } />
         </Routes>
       </div>
     </Router>
