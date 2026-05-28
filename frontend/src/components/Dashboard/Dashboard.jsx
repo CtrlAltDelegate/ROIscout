@@ -36,8 +36,9 @@ const ROIscoutDashboard = ({ user }) => {
   const [analytics, setAnalytics]             = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
-  const userPlan = user?.subscription_plan || user?.plan || 'free';
-  const isFree   = userPlan === 'free';
+  const userPlan  = user?.subscription_plan || user?.plan || 'free';
+  const isAdmin   = !!user?.is_admin;
+  const isFree    = userPlan === 'free' && !isAdmin; // admins are always unlimited
 
   useEffect(() => {
     const hasVisited = localStorage.getItem('roi_scout_visited');

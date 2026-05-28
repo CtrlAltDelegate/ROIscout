@@ -20,7 +20,7 @@ function filtersFromParams(params) {
 
 const ROITableView = ({ user }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const isPro = (user?.subscription_plan || user?.plan) === 'pro';
+  const isPro = (user?.subscription_plan || user?.plan) === 'pro' || !!user?.is_admin;
 
   const [filters, setFilters]                 = useState(() => filtersFromParams(searchParams));
   const [data, setData]                       = useState([]);

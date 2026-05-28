@@ -102,7 +102,7 @@ const FieldLabel = ({ children }) => (
 // ── Main component ─────────────────────────────────────────────────────────────
 
 const CashFlowView = ({ user }) => {
-  const isPro = (user?.subscription_plan || user?.plan) === 'pro';
+  const isPro = (user?.subscription_plan || user?.plan) === 'pro' || !!user?.is_admin;
 
   const [params, setParams]                   = useState(DEFAULT_PARAMS);
   const [data, setData]                       = useState([]);

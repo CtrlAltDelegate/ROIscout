@@ -9,6 +9,24 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
+/** Returns true if this email is in the ADMIN_EMAILS env var. */
+const isAdmin = (email) => {
+  if (!email || !process.env.ADMIN_EMAILS) return false;
+  return process.env.ADMIN_EMAILS
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .includes(email.toLowerCase());
+};
+
+/** Build the safe user object sent to the client. */
+const buildUserPayload = (user) => ({
+  id:           user.id,
+  email:        user.email,
+  plan:         user.subscription_plan || user.plan || 'free',
+  is_admin:     isAdmin(user.email),
+  createdAt:    user.created_at,
+});
+
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const authController = {
@@ -56,11 +74,7 @@ const authController = {
       res.status(201).json({
         message: 'Account created successfully',
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          createdAt: user.created_at,
-        },
+        user: buildUserPayload(user),
       });
     } catch (error) {
       console.error('Signup error:', error);
@@ -113,11 +127,7 @@ const authController = {
       res.json({
         message: 'Login successful',
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          createdAt: user.created_at,
-        },
+        user: buildUserPayload(user),
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -150,11 +160,7 @@ const authController = {
       const user = result.rows[0];
 
       res.json({
-        user: {
-          id: user.id,
-          email: user.email,
-          createdAt: user.created_at,
-        },
+        user: buildUserPayload(user),
       });
     } catch (error) {
       console.error('Get profile error:', error);
@@ -350,13 +356,7 @@ const authController = {
       res.json({
         message: 'Google login successful',
         token: jwtToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: name,
-          picture: picture,
-          createdAt: user.created_at,
-        },
+        user: { ...buildUserPayload(user), name, picture },
       });
     } catch (error) {
       console.error('Google login error:', error);
