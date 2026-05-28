@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /login
+Allow: /signup
+
+# Keep auth, reset, and dashboard paths private
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /reset-password
+Disallow: /forgot-password
+
+Sitemap: https://roiscout.netlify.app/sitemap.xml
