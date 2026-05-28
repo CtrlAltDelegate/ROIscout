@@ -230,46 +230,13 @@ const ROIscoutDashboard = ({ user }) => {
 
       case 'saved':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Saved Searches</h4>
-              <div>
-                {[
-                  { name: 'Beverly Hills High Ratio', count: 12, ratio: '5.8%' },
-                  { name: 'Venice Beach Under 600k',  count: 8,  ratio: '4.2%' },
-                  { name: 'Santa Monica Condos',      count: 15, ratio: '5.1%' },
-                ].map((s, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 -mx-2 px-2 hover:bg-slate-50 rounded-lg cursor-pointer">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">{s.name}</p>
-                      <p className="text-xs text-slate-400">{s.count} zip codes</p>
-                    </div>
-                    <span className="text-sm font-semibold text-green-600">{s.ratio}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Favorite Properties</h4>
-              <div>
-                {[
-                  { address: '123 Beverly Hills Dr', price: '$750,000', ratio: '5.6%' },
-                  { address: '456 Sunset Blvd',      price: '$550,000', ratio: '6.1%' },
-                  { address: '789 Hollywood Blvd',   price: '$425,000', ratio: '6.2%' },
-                ].map((p, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 -mx-2 px-2 hover:bg-slate-50 rounded-lg cursor-pointer">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">{p.address}</p>
-                      <p className="text-xs text-slate-400">{p.price}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-amber-400 fill-amber-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                      <span className="text-sm font-semibold text-green-600">{p.ratio}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
+            <div className="text-3xl mb-3">🔖</div>
+            <p className="text-slate-700 font-medium text-sm">No saved searches yet</p>
+            <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto leading-relaxed">
+              Use the <strong>Search &amp; List</strong> tab to filter by state, price, and rent —
+              then click <strong>Save Search</strong> to bookmark it here.
+            </p>
           </div>
         );
 
