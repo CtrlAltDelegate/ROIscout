@@ -15,18 +15,20 @@ const cocColor = (pct) => {
 };
 
 const getYieldColor = (y) => {
-  if (y >= 10) return 'text-green-400';
-  if (y >= 8)  return 'text-green-300';
-  if (y >= 6)  return 'text-yellow-400';
-  if (y >= 4)  return 'text-orange-400';
+  const n = Number(y);
+  if (n >= 10) return 'text-green-400';
+  if (n >= 8)  return 'text-green-300';
+  if (n >= 6)  return 'text-yellow-400';
+  if (n >= 4)  return 'text-orange-400';
   return 'text-red-400';
 };
 
 const getRentRatioColor = (r) => {
-  if (r >= 1.2) return 'text-green-400';
-  if (r >= 1.0) return 'text-green-300';
-  if (r >= 0.8) return 'text-yellow-400';
-  if (r >= 0.6) return 'text-orange-400';
+  const n = Number(r);
+  if (n >= 1.2) return 'text-green-400';
+  if (n >= 1.0) return 'text-green-300';
+  if (n >= 0.8) return 'text-yellow-400';
+  if (n >= 0.6) return 'text-orange-400';
   return 'text-red-400';
 };
 
@@ -68,7 +70,7 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
         const cf = calcCashFlow(r, cashFlowParams);
         return { ...r, _cf: cf };
       })
-      .filter(r => r._cf !== null && r.median_price <= maxPrice);
+      .filter(r => r._cf !== null && Number(r.median_price) <= maxPrice);
   }, [data, cashFlowParams, cfMode]);
 
   // Sort
@@ -199,10 +201,10 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                     </td>
                     <td className="px-4 py-3 text-gray-300 text-sm">{row.county}</td>
                     <td className="px-4 py-3 text-right text-white">
-                      ${(row.median_price || 0).toLocaleString()}
+                      ${(Number(row.median_price) || 0).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right text-white">
-                      ${(row.median_rent || 0).toLocaleString()}
+                      ${(Number(row.median_rent) || 0).toLocaleString()}
                     </td>
 
                     {cfMode ? (
@@ -213,20 +215,20 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                         <td className={`px-4 py-3 text-right font-bold text-base ${cocColor(cf?.cashOnCash ?? 0)}`}>
                           {cf ? `${cf.cashOnCash.toFixed(1)}%` : '—'}
                         </td>
-                        <td className={`px-4 py-3 text-right text-sm ${getYieldColor(row.gross_rental_yield)}`}>
-                          {(row.gross_rental_yield || 0).toFixed(1)}%
+                        <td className={`px-4 py-3 text-right text-sm ${getYieldColor(Number(row.gross_rental_yield))}`}>
+                          {(Number(row.gross_rental_yield) || 0).toFixed(1)}%
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className={`px-4 py-3 text-right font-medium ${getRentRatioColor(row.rent_to_price_ratio)}`}>
-                          {(row.rent_to_price_ratio || 0).toFixed(3)}
+                        <td className={`px-4 py-3 text-right font-medium ${getRentRatioColor(Number(row.rent_to_price_ratio))}`}>
+                          {(Number(row.rent_to_price_ratio) || 0).toFixed(3)}
                         </td>
-                        <td className={`px-4 py-3 text-right font-bold text-lg ${getYieldColor(row.gross_rental_yield)}`}>
-                          {(row.gross_rental_yield || 0).toFixed(1)}%
+                        <td className={`px-4 py-3 text-right font-bold text-lg ${getYieldColor(Number(row.gross_rental_yield))}`}>
+                          {(Number(row.gross_rental_yield) || 0).toFixed(1)}%
                         </td>
                         <td className="px-4 py-3 text-right text-gray-300">
-                          {(row.grm || 0).toFixed(1)}
+                          {(Number(row.grm) || 0).toFixed(1)}
                         </td>
                       </>
                     )}
