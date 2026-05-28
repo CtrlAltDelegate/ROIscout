@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Percent, Map, Star } from 'lucide-react';
 import DataDisclaimer from '../Shared/DataDisclaimer';
 import LandingHeatmap from './LandingHeatmap';
 import { apiService } from '../../services/api';
 
 const SimpleLandingPage = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail]           = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -13,166 +14,178 @@ const SimpleLandingPage = () => {
     e.preventDefault();
     if (!email || submitting) return;
     setSubmitting(true);
-    try {
-      await apiService.subscribe(email);
-    } catch (_) {
-      // Silently succeed — even on error, show the confirmation so users
-      // don't retry endlessly (duplicate emails are deduped on the backend)
-    } finally {
-      setIsSubmitted(true);
-      setSubmitting(false);
-    }
+    try { await apiService.subscribe(email); } catch {}
+    finally { setIsSubmitted(true); setSubmitting(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50">
-      <div className="container mx-auto px-6 py-16 md:py-20">
-        {/* Hero — core message for investors */}
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-            Find the best rental markets{' '}
-            <span className="text-blue-600">before everyone else.</span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Built for real estate investors evaluating their next market. Zip-level data, rent-to-price ratios,
-            and gross yields so you can spot opportunities and compare markets in minutes — not spreadsheets.
+    <div className="min-h-screen bg-white">
+
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="relative bg-slate-900 min-h-[85vh] flex flex-col justify-center px-6 overflow-hidden">
+        {/* Faint green radial glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(22,163,74,0.12)_0%,_transparent_60%)] pointer-events-none" />
+
+        <div className="relative max-w-4xl mx-auto text-center">
+          <p className="text-green-400 text-sm font-semibold uppercase tracking-widest mb-4">
+            Zip-level rental market intelligence
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight mb-6">
+            Find the best rental markets{' '}
+            <span className="text-green-400">before everyone else.</span>
+          </h1>
+          <p className="text-lg text-slate-400 max-w-xl mx-auto mb-10 leading-relaxed">
+            Zip-level gross yields, rent-to-price ratios, cash flow projections, and GRM for 8,000+ markets across the US.
+            Updated monthly from Zillow.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/signup"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg transition-colors text-center shadow-lg shadow-blue-600/25"
+              className="bg-green-600 hover:bg-green-500 text-white font-semibold px-7 py-3.5 rounded-xl shadow-lg transition-colors"
             >
-              Get Started
+              Get Started Free
             </Link>
             <Link
               to="/login"
-              className="bg-white hover:bg-gray-50 text-blue-600 font-semibold px-8 py-4 rounded-lg border-2 border-blue-600 transition-colors text-center"
+              className="border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white font-semibold px-7 py-3.5 rounded-xl transition-colors"
             >
               Sign In
             </Link>
           </div>
         </div>
+      </section>
 
-        {/* Live sample heatmap — real data */}
-        <section className="mb-20" aria-label="Live sample heatmap">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">See it in action</h2>
-            <p className="text-gray-600 text-center mb-8 max-w-xl mx-auto">
-              Real zip-level ROI data below. Green = stronger yield; &quot;1%&quot; = meets the 1% rule. Sign up for the full map and filters.
-            </p>
+      {/* ── Live sample heatmap ──────────────────────────────────────────── */}
+      <section className="bg-slate-900 px-6 pb-20" aria-label="Live sample heatmap">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-white">Live sample — zip-level ROI</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Real data · Green = stronger yield · "1%" = meets the 1% rule</p>
+              </div>
+              <Link to="/signup" className="text-green-400 hover:text-green-300 text-sm font-medium">
+                See full map & filters →
+              </Link>
+            </div>
             <LandingHeatmap />
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Three concrete use-case scenarios */}
-        <section className="mb-20" aria-label="Use cases">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-10">How investors use ROI Scout</h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <div className="text-4xl mb-4" aria-hidden="true">📐</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Markets that meet the 1% rule</h3>
-              <p className="text-gray-600">
-                Filter by rent-to-price ratio and gross rental yield to find zip codes where monthly rent
-                meets or exceeds 1% of purchase price — so you focus on markets that pencil.
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <div className="text-4xl mb-4" aria-hidden="true">🗺️</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Compare markets across states</h3>
-              <p className="text-gray-600">
-                Use the interactive heat map and ROI table to compare median prices, rents, and yields
-                across counties and states — no more jumping between tabs or manual lookups.
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <div className="text-4xl mb-4" aria-hidden="true">⭐</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Save searches for ongoing monitoring</h3>
-              <p className="text-gray-600">
-                Save your criteria and revisit anytime. Pro subscribers get email alerts when metrics change
-                so you stay ahead of the market without re-running the same search every week.
-              </p>
-            </div>
+      {/* ── How investors use it ─────────────────────────────────────────── */}
+      <section className="bg-white border-t border-slate-100 px-6 py-20" aria-label="Use cases">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-slate-900 text-center mb-10 tracking-tight">How investors use ROIScout</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                Icon: Percent,
+                title: 'Markets that meet the 1% rule',
+                body: 'Filter by rent-to-price ratio and gross yield to find zip codes where monthly rent meets or exceeds 1% of purchase price.',
+              },
+              {
+                Icon: Map,
+                title: 'Compare markets across states',
+                body: 'Use the heat map and ROI table to compare median prices, rents, and yields across counties and states — all in one place.',
+              },
+              {
+                Icon: Star,
+                title: 'Personal cash flow projections',
+                body: 'Enter your down payment, interest rate, and expense reserves. ROIScout ranks every market by your actual cash-on-cash return.',
+              },
+            ].map(({ Icon, title, body }) => (
+              <div key={title} className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600 mb-4">
+                  <Icon size={20} />
+                </div>
+                <h3 className="text-base font-semibold text-slate-900 mb-2">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{body}</p>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* About — founder story (credibility asset) */}
-        <section className="mb-20" aria-label="About">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 md:p-12 max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why I built this</h2>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              For years, my market research looked like this: two Zillow tabs open side by side. One filtered
-              for active rentals in a city, one for homes for sale in that same city. I&apos;d manually cross-reference
-              the two — find a neighborhood where rents were strong, find a property in that same neighborhood
-              at the right price point, then open a spreadsheet and start the math.
-            </p>
-            <p className="text-gray-700 leading-relaxed mb-4">
-              I did that for 500+ deals. Long-term rentals in Indianapolis. Short-term and medium-term rentals
-              in Southern California. I went through the full cycle on all of them — bought, managed, sold.
-              The strategy evolved. The two-tab ritual never did.
-            </p>
-            <p className="text-gray-700 leading-relaxed mb-6">
-              What I wanted was simple: one map that overlaid both sides of the equation — what homes cost
-              and what they rent for, by zip code, with the yield math already done. That tool didn&apos;t exist.
-              So I built it.
-            </p>
-            <div className="border-t border-gray-100 pt-6 flex flex-wrap gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">500+</div>
-                <div className="text-sm text-gray-500 mt-1">Deals analyzed</div>
+      {/* ── Why I built this ─────────────────────────────────────────────── */}
+      <section className="bg-slate-900 px-6 py-20" aria-label="About">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-white mb-6">Why I built this</h2>
+          <p className="text-slate-300 leading-relaxed mb-4">
+            For years, my market research looked like this: two Zillow tabs open side by side. One filtered
+            for active rentals in a city, one for homes for sale in that same city. I'd manually cross-reference
+            the two — find a neighborhood where rents were strong, find a property at the right price point,
+            then open a spreadsheet and start the math.
+          </p>
+          <p className="text-slate-300 leading-relaxed mb-4">
+            I did that for 500+ deals. Long-term rentals in Indianapolis. Short-term and medium-term rentals
+            in Southern California. I went through the full cycle on all of them — bought, managed, sold.
+            The strategy evolved. The two-tab ritual never did.
+          </p>
+          <p className="text-slate-300 leading-relaxed mb-10">
+            What I wanted was simple: one tool that overlaid both sides of the equation — what homes cost
+            and what they rent for, by zip code, with the yield math already done. That tool didn't exist.
+            So I built it.
+          </p>
+
+          <div className="border-t border-slate-700 pt-8 flex flex-wrap gap-10">
+            {[
+              { n: '500+',     label: 'Deals analyzed' },
+              { n: '3',        label: 'Strategies (LTR, STR, MTR)' },
+              { n: '2 markets',label: 'Indianapolis & Southern California' },
+            ].map(({ n, label }) => (
+              <div key={label}>
+                <div className="text-3xl font-bold text-green-400">{n}</div>
+                <div className="text-sm text-slate-400 mt-1">{label}</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">3</div>
-                <div className="text-sm text-gray-500 mt-1">Strategies (LTR, STR, MTR)</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">2 markets</div>
-                <div className="text-sm text-gray-500 mt-1">Indianapolis &amp; Southern California</div>
-              </div>
-            </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Email signup */}
-        <section className="bg-blue-600 rounded-2xl p-8 md:p-10 text-center text-white max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">Stay Updated</h2>
-          <p className="text-blue-100 mb-6 max-w-xl mx-auto">
+      {/* ── Stay updated ─────────────────────────────────────────────────── */}
+      <section className="bg-green-600 px-6 py-16 text-center" aria-label="Email signup">
+        <div className="max-w-xl mx-auto">
+          <h2 className="text-2xl font-bold text-white mb-3">Stay Updated</h2>
+          <p className="text-green-100 mb-7 text-sm leading-relaxed">
             New features, market insights, and launch news. No spam.
           </p>
           {!isSubmitted ? (
-            <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-white/20 border border-white/30 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white text-sm"
                 required
               />
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-6 py-3 rounded-lg transition-colors disabled:opacity-60"
+                className="bg-white hover:bg-green-50 text-green-700 font-semibold px-5 py-2.5 rounded-lg transition-colors disabled:opacity-60 text-sm whitespace-nowrap"
               >
                 {submitting ? 'Saving…' : 'Subscribe'}
               </button>
             </form>
           ) : (
-            <div className="bg-green-500 text-white px-6 py-3 rounded-lg inline-block">
-              Thanks for subscribing. We&apos;ll be in touch.
+            <div className="bg-white/20 text-white px-6 py-3 rounded-lg inline-block text-sm font-medium">
+              ✓ Thanks — we'll be in touch.
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        {/* Footer: legal + data disclaimer */}
-        <footer className="mt-20 pt-8 border-t border-gray-200 text-center">
-          <DataDisclaimer className="max-w-xl mx-auto mb-4" />
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600">
-            <Link to="/terms" className="hover:text-blue-600">Terms of Service</Link>
-            <Link to="/privacy" className="hover:text-blue-600">Privacy Policy</Link>
-          </div>
-          <p className="mt-4 text-gray-500">&copy; 2026 ROI Scout. Built for real estate investors.</p>
-        </footer>
-      </div>
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer className="bg-slate-900 px-6 py-8 text-center">
+        <DataDisclaimer className="max-w-xl mx-auto mb-4" />
+        <div className="flex flex-wrap justify-center gap-6 text-sm">
+          <Link to="/terms"   className="text-slate-400 hover:text-white transition-colors">Terms of Service</Link>
+          <Link to="/privacy" className="text-slate-400 hover:text-white transition-colors">Privacy Policy</Link>
+          <Link to="/pricing" className="text-slate-400 hover:text-white transition-colors">Pricing</Link>
+        </div>
+        <p className="mt-4 text-slate-500 text-xs">© 2026 ROIScout. Built for real estate investors.</p>
+      </footer>
     </div>
   );
 };

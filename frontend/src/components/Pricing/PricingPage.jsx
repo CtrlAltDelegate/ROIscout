@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Check, RefreshCw, ShieldCheck, Database } from 'lucide-react';
 import { apiService } from '../../services/api';
 
-const ANNUAL_DISCOUNT = 0.20; // 20% off
+const ANNUAL_DISCOUNT = 0.20;
 
 const PricingPage = ({ user }) => {
-  const [plans, setPlans] = useState([]);
-  const [subscription, setSubscription] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [plans, setPlans]                   = useState([]);
+  const [subscription, setSubscription]     = useState(null);
+  const [loading, setLoading]               = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
-  const [annual, setAnnual] = useState(false);
+  const [annual, setAnnual]                 = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,15 +19,10 @@ const PricingPage = ({ user }) => {
       try {
         const [plansRes, subRes] = await Promise.all([
           apiService.getStripePlans(),
-          user
-            ? apiService.getSubscription().catch(() => ({ subscription: null }))
-            : Promise.resolve({ subscription: null }),
+          user ? apiService.getSubscription().catch(() => ({ subscription: null })) : Promise.resolve({ subscription: null }),
         ]);
-        if (!cancelled) {
-          setPlans(plansRes.plans || []);
-          setSubscription(subRes.subscription || null);
-        }
-      } catch (e) {
+        if (!cancelled) { setPlans(plansRes.plans || []); setSubscription(subRes.subscription || null); }
+      } catch {
         if (!cancelled) setPlans([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -37,14 +33,8 @@ const PricingPage = ({ user }) => {
   }, [user]);
 
   const handleSubscribe = async (plan) => {
-    if (plan.id === 'free') {
-      navigate('/signup');
-      return;
-    }
-    if (!user) {
-      navigate('/signup');
-      return;
-    }
+    if (plan.id === 'free') { navigate('/signup'); return; }
+    if (!user) { navigate('/signup'); return; }
     setCheckoutLoading(plan.id);
     try {
       const { url } = await apiService.createCheckoutSession({
@@ -53,158 +43,120 @@ const PricingPage = ({ user }) => {
         cancelUrl: `${window.location.origin}/pricing`,
       });
       if (url) window.location.href = url;
-    } catch (e) {
-      console.error(e);
-      setCheckoutLoading(null);
-    }
+    } catch { setCheckoutLoading(null); }
   };
 
   const handleBillingPortal = async () => {
     try {
       const { url } = await apiService.createBillingPortalSession();
       if (url) window.location.href = url;
-    } catch (e) {
-      console.error(e);
-    }
+    } catch {}
   };
 
-  const effectivePrice = (plan) => {
-    if (plan.price === 0) return 0;
-    return annual ? plan.price * (1 - ANNUAL_DISCOUNT) : plan.price;
-  };
+  const effectivePrice = (plan) => plan.price === 0 ? 0 : annual ? plan.price * (1 - ANNUAL_DISCOUNT) : plan.price;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-2 border-green-500 border-t-transparent" />
       </div>
     );
   }
 
   const currentPlanId = subscription?.status === 'active' ? subscription.planId : 'free';
-
-  // Use plans from API, or fall back to hardcoded tiers if API returns nothing
   const displayPlans = plans.length ? plans : [
-    {
-      id: 'free', name: 'Free', price: 0, interval: 'month',
-      features: ['Browse the national heatmap', '10 zip code detail views/month', 'Core metrics: yield, GRM, rent-to-price'],
-      stripePriceId: null,
-    },
-    {
-      id: 'basic', name: 'Basic', price: 19.99, interval: 'month',
-      features: ['Unlimited zip code views', 'Unlimited saved searches', 'Full metrics suite', 'Email support'],
-      stripePriceId: null,
-    },
-    {
-      id: 'pro', name: 'Pro', price: 79.99, interval: 'month',
-      features: ['Everything in Basic', 'CSV export', 'Email alerts on yield thresholds', 'Priority support'],
-      stripePriceId: null,
-    },
+    { id: 'free',  name: 'Free',  price: 0,     interval: 'month', stripePriceId: null,
+      features: ['Browse the national heatmap', '10 zip code detail views/month', 'Core metrics: yield, GRM, rent-to-price'] },
+    { id: 'basic', name: 'Basic', price: 19.99, interval: 'month', stripePriceId: null,
+      features: ['Unlimited zip code views', 'Unlimited saved searches', 'Full metrics suite', 'Cash flow calculator', 'Email support'] },
+    { id: 'pro',   name: 'Pro',   price: 79.99, interval: 'month', stripePriceId: null,
+      features: ['Everything in Basic', 'CSV export', 'Email alerts on yield thresholds', 'Priority support'] },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-slate-50">
+      {/* Dark hero band */}
+      <div className="bg-slate-900 pt-16 pb-32 px-4 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(22,163,74,0.12)_0%,_transparent_60%)]" />
+        <div className="relative">
+          <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">Simple, transparent pricing</h1>
+          <p className="text-slate-400 text-lg mb-8">Start free. Upgrade when you need more.</p>
 
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Simple, transparent pricing</h1>
-          <p className="text-lg text-gray-600 mb-8">
-            Start free. Upgrade when you need more.
-          </p>
-
-          {/* Annual toggle */}
-          <div className="inline-flex items-center gap-3 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
-            <span className={`text-sm font-medium ${!annual ? 'text-gray-900' : 'text-gray-400'}`}>Monthly</span>
+          {/* Monthly / Annual toggle */}
+          <div className="inline-flex items-center gap-1 bg-slate-800 rounded-full p-1">
             <button
-              onClick={() => setAnnual(!annual)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${annual ? 'bg-green-500' : 'bg-gray-300'}`}
+              onClick={() => setAnnual(false)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${!annual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${annual ? 'translate-x-5' : ''}`}
-              />
+              Monthly
             </button>
-            <span className={`text-sm font-medium ${annual ? 'text-gray-900' : 'text-gray-400'}`}>
+            <button
+              onClick={() => setAnnual(true)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${annual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+            >
               Annual
-              <span className="ml-1.5 bg-green-100 text-green-700 text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                Save 20%
-              </span>
-            </span>
+              <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">Save 20%</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Pricing cards */}
+      {/* Cards — overlap the dark band */}
+      <div className="max-w-5xl mx-auto px-4 -mt-20 pb-16">
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           {displayPlans.map((plan) => {
             const isCurrent = currentPlanId === plan.id;
-            const isPro = plan.id === 'pro';
-            const isFree = plan.id === 'free';
-            const price = effectivePrice(plan);
+            const isPro     = plan.id === 'pro';
+            const isFree    = plan.id === 'free';
+            const price     = effectivePrice(plan);
 
             return (
-              <div
-                key={plan.id}
-                className={`relative rounded-2xl border-2 p-8 bg-white flex flex-col ${
-                  isPro
-                    ? 'border-green-500 shadow-xl'
-                    : isCurrent
-                    ? 'border-blue-400 shadow-md'
-                    : 'border-gray-200 shadow-sm'
-                }`}
-              >
-                {/* Popular badge */}
+              <div key={plan.id} className={`relative bg-white rounded-2xl border p-7 flex flex-col shadow-sm ${
+                isPro ? 'border-green-500 ring-2 ring-green-500/20 shadow-md' : 'border-slate-200'
+              }`}>
                 {isPro && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
-                      Most popular among active investors
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                      Most popular
                     </span>
                   </div>
                 )}
 
-                {/* Plan name + current badge */}
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">{plan.name}</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-slate-900">{plan.name}</h2>
                   {isCurrent && (
-                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                    <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
                       Current
                     </span>
                   )}
                 </div>
 
-                {/* Price */}
-                <div className="mb-1">
+                <div className="mb-6">
                   {isFree ? (
-                    <span className="text-4xl font-bold text-gray-900">Free</span>
+                    <span className="text-4xl font-bold text-slate-900">Free</span>
                   ) : (
                     <>
-                      <span className="text-4xl font-bold text-gray-900">${price.toFixed(2)}</span>
-                      <span className="text-gray-500 text-sm">/mo</span>
-                      {annual && (
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          billed ${(price * 12).toFixed(0)}/year
-                        </div>
-                      )}
+                      <span className="text-4xl font-bold text-slate-900">${price.toFixed(2)}</span>
+                      <span className="text-slate-400 text-lg font-normal">/mo</span>
+                      {annual && <div className="text-xs text-slate-400 mt-0.5">billed ${(price * 12).toFixed(0)}/yr</div>}
                     </>
                   )}
                 </div>
 
-                {/* Features */}
-                <ul className="space-y-3 mb-8 flex-1 mt-6">
+                <ul className="space-y-3 mb-8 flex-1">
                   {(plan.features || []).map((f, i) => (
-                    <li key={i} className="flex items-start text-gray-700 text-sm">
-                      <span className="text-green-500 mr-2 mt-0.5 flex-shrink-0">✓</span>
+                    <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                      <Check size={15} className="text-green-500 flex-shrink-0 mt-0.5" />
                       {f}
                     </li>
                   ))}
                   {isFree && (
                     <>
-                      <li className="flex items-start text-gray-400 text-sm line-through">
-                        <span className="mr-2 mt-0.5 flex-shrink-0">✗</span>
-                        Saved searches
+                      <li className="flex items-start gap-2 text-sm text-slate-300 line-through">
+                        <span className="w-[15px] flex-shrink-0" />Saved searches
                       </li>
-                      <li className="flex items-start text-gray-400 text-sm line-through">
-                        <span className="mr-2 mt-0.5 flex-shrink-0">✗</span>
-                        CSV export
+                      <li className="flex items-start gap-2 text-sm text-slate-300 line-through">
+                        <span className="w-[15px] flex-shrink-0" />CSV export
                       </li>
                     </>
                   )}
@@ -215,47 +167,33 @@ const PricingPage = ({ user }) => {
                   isCurrent ? (
                     <button
                       onClick={handleBillingPortal}
-                      className="w-full py-3 px-4 rounded-xl border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                      className="w-full py-3 rounded-xl border-2 border-slate-300 text-slate-600 font-semibold hover:bg-slate-50 transition-colors text-sm"
                     >
                       Manage subscription
                     </button>
                   ) : isFree ? (
-                    <div className="w-full py-3 px-4 rounded-xl bg-gray-100 text-gray-500 font-medium text-center text-sm">
+                    <div className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-400 font-medium text-center text-sm">
                       Your current plan
                     </div>
                   ) : (
                     <button
                       onClick={() => handleSubscribe(plan)}
-                      disabled={!!checkoutLoading || (!plan.stripePriceId)}
-                      className={`w-full py-3 px-4 rounded-xl font-semibold transition-colors ${
-                        isPro
-                          ? 'bg-green-500 hover:bg-green-600 text-white'
-                          : 'bg-gray-900 hover:bg-gray-800 text-white'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      disabled={!!checkoutLoading || !plan.stripePriceId}
+                      className={`w-full py-3 rounded-xl font-semibold transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isPro ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'
+                      }`}
                     >
-                      {checkoutLoading === plan.id
-                        ? 'Redirecting…'
-                        : plan.stripePriceId
-                        ? 'Subscribe'
-                        : 'Coming soon'}
+                      {checkoutLoading === plan.id ? 'Redirecting…' : plan.stripePriceId ? 'Subscribe' : 'Coming soon'}
                     </button>
                   )
                 ) : isFree ? (
-                  <Link
-                    to="/signup"
-                    className="block w-full py-3 px-4 rounded-xl font-semibold text-center bg-gray-900 hover:bg-gray-800 text-white transition-colors"
-                  >
+                  <Link to="/signup" className="block w-full py-3 rounded-xl font-semibold text-center bg-slate-900 hover:bg-slate-800 text-white transition-colors text-sm">
                     Get started free
                   </Link>
                 ) : (
-                  <Link
-                    to="/signup"
-                    className={`block w-full py-3 px-4 rounded-xl font-semibold text-center transition-colors ${
-                      isPro
-                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                        : 'bg-gray-900 hover:bg-gray-800 text-white'
-                    }`}
-                  >
+                  <Link to="/signup" className={`block w-full py-3 rounded-xl font-semibold text-center transition-colors text-sm ${
+                    isPro ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'
+                  }`}>
                     Subscribe
                   </Link>
                 )}
@@ -264,26 +202,23 @@ const PricingPage = ({ user }) => {
           })}
         </div>
 
-        {/* FAQ / trust row */}
-        <div className="grid md:grid-cols-3 gap-6 text-center text-sm text-gray-500 mb-10">
-          <div>
-            <div className="font-semibold text-gray-700 mb-1">Cancel anytime</div>
-            No contracts. Downgrade or cancel from your billing settings.
-          </div>
-          <div>
-            <div className="font-semibold text-gray-700 mb-1">Buy-and-hold friendly</div>
-            Monthly billing as default — don't pay during dormant search periods.
-          </div>
-          <div>
-            <div className="font-semibold text-gray-700 mb-1">Data updated monthly</div>
-            Zillow ZHVI home values + ZORI asking rents. 8,000+ zip codes tracked.
-          </div>
+        {/* Trust signals */}
+        <div className="grid md:grid-cols-3 gap-6 text-center mb-10">
+          {[
+            { Icon: ShieldCheck, title: 'Cancel anytime', body: 'No contracts. Downgrade or cancel from your billing settings.' },
+            { Icon: RefreshCw,   title: 'Buy-and-hold friendly', body: "Monthly billing — don't pay during dormant search periods." },
+            { Icon: Database,    title: 'Data updated monthly', body: 'Zillow ZHVI + ZORI. 8,000+ zip codes tracked nationwide.' },
+          ].map(({ Icon, title, body }) => (
+            <div key={title} className="flex flex-col items-center gap-2">
+              <Icon size={18} className="text-slate-400" />
+              <p className="text-sm font-semibold text-slate-700">{title}</p>
+              <p className="text-sm text-slate-500">{body}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-green-600 hover:text-green-700 font-medium text-sm">
-            ← Back to home
-          </Link>
+        <div className="text-center">
+          <Link to="/" className="text-green-600 hover:text-green-700 font-medium text-sm">← Back to home</Link>
         </div>
       </div>
     </div>

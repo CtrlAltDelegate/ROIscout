@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 const Header = ({ user, onLogout }) => {
@@ -8,240 +9,143 @@ const Header = ({ user, onLogout }) => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!user) {
-      setSubscription(null);
-      return;
-    }
+    if (!user) { setSubscription(null); return; }
     apiService.getSubscription().then((res) => setSubscription(res.subscription || null)).catch(() => setSubscription(null));
   }, [user]);
 
-  const handleLogout = () => {
-    onLogout();
-    setIsMenuOpen(false);
+  const handleLogout = () => { onLogout(); setIsMenuOpen(false); };
+
+  const navLink = (path, label) => {
+    const active = location.pathname === path;
+    return (
+      <Link
+        to={path}
+        className={`text-sm font-medium pb-0.5 transition-colors ${
+          active
+            ? 'text-white border-b-2 border-green-400'
+            : 'text-slate-400 hover:text-white border-b-2 border-transparent'
+        }`}
+      >
+        {label}
+      </Link>
+    );
   };
 
+  const initials = user ? user.email.slice(0, 2).toUpperCase() : '';
+
   return (
-    <header className="bg-gray-800 border-b border-gray-700">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="text-2xl font-bold">
-              <span className="text-white">ROI</span>
-              <span className="text-green-400">Scout</span>
-            </div>
-          </Link>
+    <header className="bg-slate-900 border-b border-slate-800 h-14 flex items-center flex-shrink-0">
+      <div className="w-full px-5 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center">
+          <span className="text-xl font-bold">
+            <span className="text-green-400">ROI</span>
+            <span className="text-white">Scout</span>
+          </span>
+        </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            {user ? (
-              <>
-                <Link
-                  to="/dashboard"
-                  className={`transition-colors ${
-                    location.pathname === '/dashboard'
-                      ? 'text-green-400'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center gap-6">
+          {user ? (
+            <>
+              {navLink('/dashboard', 'Dashboard')}
+              {navLink('/pricing', 'Pricing')}
+
+              {/* User menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
                 >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/pricing"
-                  className={`transition-colors ${
-                    location.pathname === '/pricing'
-                      ? 'text-green-400'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Pricing
-                </Link>
-                <div className="relative">
-                  <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
-                  >
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {user.email.charAt(0).toUpperCase()}
+                  <div className="w-7 h-7 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    {initials}
+                  </div>
+                  <ChevronDown size={14} className={`transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 py-1">
+                    <div className="px-4 py-2 border-b border-slate-700">
+                      <p className="text-xs text-slate-400">Signed in as</p>
+                      <p className="text-sm text-white font-medium truncate">{user.email}</p>
+                      {subscription?.status === 'active' && (
+                        <span className="inline-block mt-0.5 text-xs font-semibold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                          {subscription.planId === 'pro' ? 'Pro' : 'Basic'}
+                        </span>
+                      )}
                     </div>
-                    <span className="text-sm">{user.email}</span>
-                    <svg 
-                      className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
+                    <Link
+                      to="/pricing"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
-                      <div className="py-1">
-                        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700">
-                          Signed in as
-                        </div>
-                        <div className="px-4 py-2 text-sm text-white truncate flex items-center justify-between gap-2">
-                          <span>{user.email}</span>
-                          {subscription?.status === 'active' && (
-                            <span className="text-xs font-medium text-green-400 bg-gray-700 px-1.5 py-0.5 rounded">
-                              {subscription.planId === 'pro' ? 'Pro' : 'Basic'}
-                            </span>
-                          )}
-                        </div>
-                        <Link
-                          to="/pricing"
-                          onClick={() => setIsMenuOpen(false)}
-                          className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-                        >
-                          {subscription?.status === 'active' ? 'Manage subscription' : 'Upgrade'}
-                        </Link>
-                        <div className="border-t border-gray-700">
-                          <button
-                            onClick={handleLogout}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-                          >
-                            Sign Out
-                          </button>
-                        </div>
-                      </div>
+                      {subscription?.status === 'active' ? 'Manage subscription' : 'Upgrade plan'}
+                    </Link>
+                    <div className="border-t border-slate-700 mt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                      >
+                        Sign Out
+                      </button>
                     </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/pricing"
-                  className={`transition-colors ${
-                    location.pathname === '/pricing'
-                      ? 'text-green-400'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Pricing
-                </Link>
-                <Link
-                  to="/login"
-                  className={`transition-colors ${
-                    location.pathname === '/login'
-                      ? 'text-green-400'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-300 hover:text-white transition-colors"
-            >
-              <svg 
-                className="w-6 h-6" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </div>
                 )}
-              </svg>
-            </button>
-          </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {navLink('/pricing', 'Pricing')}
+              {navLink('/login', 'Log in')}
+              <Link
+                to="/signup"
+                className="bg-green-600 hover:bg-green-500 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition-colors"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-700">
-            <div className="py-4 space-y-2">
-              {user ? (
-                <>
-                  <div className="px-4 py-2 text-sm text-gray-400">
-                    Signed in as {user.email}
-                    {subscription?.status === 'active' && (
-                      <span className="ml-2 text-green-400">({subscription.planId === 'pro' ? 'Pro' : 'Basic'})</span>
-                    )}
-                  </div>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`block px-4 py-2 transition-colors ${
-                      location.pathname === '/dashboard'
-                        ? 'text-green-400'
-                        : 'text-gray-300 hover:text-white'
-                    }`}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/pricing"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-4 py-2 text-gray-300 hover:text-white transition-colors"
-                  >
-                    {subscription?.status === 'active' ? 'Manage subscription' : 'Pricing'}
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-gray-300 hover:text-white transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/pricing"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-4 py-2 text-gray-300 hover:text-white transition-colors"
-                  >
-                    Pricing
-                  </Link>
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`block px-4 py-2 transition-colors ${
-                      location.pathname === '/login'
-                        ? 'text-green-400'
-                        : 'text-gray-300 hover:text-white'
-                    }`}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/signup"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block mx-4 my-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors text-center"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Mobile toggle */}
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="md:hidden text-slate-400 hover:text-white"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isMenuOpen
+              ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />}
+          </svg>
+        </button>
       </div>
 
-      {/* Close dropdown when clicking outside */}
+      {/* Mobile menu */}
       {isMenuOpen && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setIsMenuOpen(false)}
-        />
+        <div className="md:hidden absolute top-14 inset-x-0 bg-slate-900 border-b border-slate-800 z-40 py-3">
+          {user ? (
+            <>
+              <div className="px-5 py-2 text-xs text-slate-400 border-b border-slate-800 mb-2">
+                {user.email}
+              </div>
+              <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="block px-5 py-2 text-sm text-slate-300 hover:text-white">Dashboard</Link>
+              <Link to="/pricing" onClick={() => setIsMenuOpen(false)} className="block px-5 py-2 text-sm text-slate-300 hover:text-white">Pricing</Link>
+              <button onClick={handleLogout} className="block w-full text-left px-5 py-2 text-sm text-slate-400 hover:text-white">Sign Out</button>
+            </>
+          ) : (
+            <>
+              <Link to="/pricing" onClick={() => setIsMenuOpen(false)} className="block px-5 py-2 text-sm text-slate-300 hover:text-white">Pricing</Link>
+              <Link to="/login" onClick={() => setIsMenuOpen(false)} className="block px-5 py-2 text-sm text-slate-300 hover:text-white">Log in</Link>
+              <div className="px-5 pt-2">
+                <Link to="/signup" onClick={() => setIsMenuOpen(false)} className="block text-center bg-green-600 hover:bg-green-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors">Sign Up</Link>
+              </div>
+            </>
+          )}
+        </div>
       )}
+
+      {/* Overlay to close dropdown */}
+      {isMenuOpen && <div className="fixed inset-0 z-30" onClick={() => setIsMenuOpen(false)} />}
     </header>
   );
 };

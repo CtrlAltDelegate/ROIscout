@@ -23,7 +23,7 @@ function filtersFromParams(params) {
 /**
  * ROI table view: filters + pricing data from API with Data Freshness badge.
  */
-const ROITableView = ({ user }) => {
+const ROITableView = ({ user, defaultCfOpen = false }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const isPro = (user?.subscription_plan || user?.plan) === 'pro';
 
@@ -36,9 +36,9 @@ const ROITableView = ({ user }) => {
   const [exporting, setExporting]       = useState(false);
   const [exportError, setExportError]   = useState(null);
 
-  // Cash flow calculator
-  const [cfOpen, setCfOpen]             = useState(false);
-  const [cfParams, setCfParams]         = useState(null); // null = not yet activated
+  // Cash flow calculator — open by default when launched from CF tab
+  const [cfOpen, setCfOpen]             = useState(defaultCfOpen);
+  const [cfParams, setCfParams]         = useState(defaultCfOpen ? DEFAULT_PARAMS : null);
 
   const fetchData = useCallback(async () => {
     if (!filters.state) {
@@ -122,14 +122,18 @@ const ROITableView = ({ user }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-slate-200">
         {/* Title row */}
         <div className="flex items-start justify-between mb-2">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">ROI by Zip Code</h2>
-            <p className="text-gray-600 text-sm mt-1">
-              Select a state to load zip-level data. The table shows median price, rent, and ROI metrics.
+            <h2 className="text-lg font-semibold text-slate-900">
+              {defaultCfOpen ? '💰 Cash Flow Analysis' : 'ROI by Zip Code'}
+            </h2>
+            <p className="text-slate-500 text-sm mt-1">
+              {defaultCfOpen
+                ? 'Enter your investment parameters below, then select a state to rank markets by cash-on-cash return.'
+                : 'Select a state to load zip-level data. The table shows median price, rent, and ROI metrics.'}
             </p>
           </div>
 
@@ -214,10 +218,14 @@ const ROITableView = ({ user }) => {
           </div>
         )}
         {!loading && !error && (!filters.state || data.length === 0) && (
-          <div className="rounded-lg bg-gray-50 border border-gray-200 p-8 text-center text-gray-600">
-            {!filters.state
-              ? 'Select a state above to load ROI data.'
-              : 'No data found for the selected filters.'}
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-10 text-center">
+            <svg className="w-8 h-8 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p className="text-slate-400 text-sm">
+              {!filters.state ? 'Select a state above to load ROI data.' : 'No data found for the selected filters.'}
+            </p>
           </div>
         )}
         {!loading && !error && data.length > 0 && cfOpen && cfParams && data.length > 0 && (() => {
