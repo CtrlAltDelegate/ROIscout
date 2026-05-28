@@ -84,39 +84,18 @@ const dataController = {
       `;
 
       const result = await query(queryText, params);
-      
-      // If no data found, try to fetch real data from properties table
+
+      // Return clean empty response when no data — no fallback to non-existent tables
       if (result.rows.length === 0) {
-        console.log('No data found in zip_data table, fetching from properties table...');
-        try {
-          const realData = await dataService.fetchRealData(filters);
-          if (realData.length > 0) {
-            return res.json({
-              data: realData,
-              total: realData.length,
-              filters: filters,
-              source: 'properties_table',
-              dataLastUpdated: null,
-              dataSources: 'Various listing sources',
-            });
-          } else {
-            return res.json({
-              data: [],
-              total: 0,
-              filters: filters,
-              source: 'no_data',
-              message: 'No properties found matching your criteria. Try running data ingestion first.',
-              dataLastUpdated: null,
-              dataSources: null,
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching real data:', error);
-          return res.status(500).json({
-            error: 'Data Fetch Failed',
-            message: 'Unable to retrieve property data',
-          });
-        }
+        return res.json({
+          data: [],
+          total: 0,
+          filters,
+          source: 'no_data',
+          message: `No Zillow data available for ${filters.state}. Coverage is limited to states where Zillow publishes both ZHVI (price) and ZORI (rent) data.`,
+          dataLastUpdated: null,
+          dataSources: null,
+        });
       }
 
       // Data freshness: use latest last_updated from result set for UI indicator
@@ -149,60 +128,30 @@ const dataController = {
    * Get available states
    */
   async getStates(req, res) {
+    // Full name lookup for display
+    const STATE_NAMES = {
+      AK:'Alaska',AL:'Alabama',AR:'Arkansas',AZ:'Arizona',CA:'California',
+      CO:'Colorado',CT:'Connecticut',DE:'Delaware',FL:'Florida',GA:'Georgia',
+      GU:'Guam',HI:'Hawaii',IA:'Iowa',ID:'Idaho',IL:'Illinois',IN:'Indiana',
+      KS:'Kansas',KY:'Kentucky',LA:'Louisiana',MA:'Massachusetts',MD:'Maryland',
+      ME:'Maine',MI:'Michigan',MN:'Minnesota',MO:'Missouri',MS:'Mississippi',
+      MT:'Montana',NC:'North Carolina',ND:'North Dakota',NE:'Nebraska',
+      NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NV:'Nevada',
+      NY:'New York',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',
+      RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',
+      TX:'Texas',UT:'Utah',VA:'Virginia',VT:'Vermont',WA:'Washington',
+      WI:'Wisconsin',WV:'West Virginia',WY:'Wyoming',
+    };
     try {
-      // Return hardcoded state list for reliability
-      const states = [
-        { code: 'AL', name: 'Alabama' },
-        { code: 'AK', name: 'Alaska' },
-        { code: 'AZ', name: 'Arizona' },
-        { code: 'AR', name: 'Arkansas' },
-        { code: 'CA', name: 'California' },
-        { code: 'CO', name: 'Colorado' },
-        { code: 'CT', name: 'Connecticut' },
-        { code: 'DE', name: 'Delaware' },
-        { code: 'FL', name: 'Florida' },
-        { code: 'GA', name: 'Georgia' },
-        { code: 'HI', name: 'Hawaii' },
-        { code: 'ID', name: 'Idaho' },
-        { code: 'IL', name: 'Illinois' },
-        { code: 'IN', name: 'Indiana' },
-        { code: 'IA', name: 'Iowa' },
-        { code: 'KS', name: 'Kansas' },
-        { code: 'KY', name: 'Kentucky' },
-        { code: 'LA', name: 'Louisiana' },
-        { code: 'ME', name: 'Maine' },
-        { code: 'MD', name: 'Maryland' },
-        { code: 'MA', name: 'Massachusetts' },
-        { code: 'MI', name: 'Michigan' },
-        { code: 'MN', name: 'Minnesota' },
-        { code: 'MS', name: 'Mississippi' },
-        { code: 'MO', name: 'Missouri' },
-        { code: 'MT', name: 'Montana' },
-        { code: 'NE', name: 'Nebraska' },
-        { code: 'NV', name: 'Nevada' },
-        { code: 'NH', name: 'New Hampshire' },
-        { code: 'NJ', name: 'New Jersey' },
-        { code: 'NM', name: 'New Mexico' },
-        { code: 'NY', name: 'New York' },
-        { code: 'NC', name: 'North Carolina' },
-        { code: 'ND', name: 'North Dakota' },
-        { code: 'OH', name: 'Ohio' },
-        { code: 'OK', name: 'Oklahoma' },
-        { code: 'OR', name: 'Oregon' },
-        { code: 'PA', name: 'Pennsylvania' },
-        { code: 'RI', name: 'Rhode Island' },
-        { code: 'SC', name: 'South Carolina' },
-        { code: 'SD', name: 'South Dakota' },
-        { code: 'TN', name: 'Tennessee' },
-        { code: 'TX', name: 'Texas' },
-        { code: 'UT', name: 'Utah' },
-        { code: 'VT', name: 'Vermont' },
-        { code: 'VA', name: 'Virginia' },
-        { code: 'WA', name: 'Washington' },
-        { code: 'WV', name: 'West Virginia' },
-        { code: 'WI', name: 'Wisconsin' },
-        { code: 'WY', name: 'Wyoming' },
-      ];
+      // Only return states that actually have data in zip_data
+      const result = await query(
+        `SELECT DISTINCT state FROM zip_data
+         WHERE median_price > 0 AND median_rent > 0
+         ORDER BY state`
+      );
+      const states = result.rows
+        .filter(r => STATE_NAMES[r.state]) // exclude GU / territories
+        .map(r => ({ code: r.state, name: STATE_NAMES[r.state] || r.state }));
 
       res.json({
         data: states,
