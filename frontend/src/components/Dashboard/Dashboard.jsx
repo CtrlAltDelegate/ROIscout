@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
+import CashFlowView from './CashFlowView';
 import { apiService } from '../../services/api';
 
 const VALID_TABS = ['map', 'list', 'cashflow', 'analytics', 'saved'];
@@ -130,7 +131,7 @@ const ROIscoutDashboard = ({ user }) => {
         return <ROITableView user={user} />;
 
       case 'cashflow':
-        return <ROITableView user={user} defaultCfOpen={true} />;
+        return <CashFlowView user={user} />;
 
       case 'analytics': {
         return (

@@ -141,6 +141,14 @@ const MapboxROIMap = ({ user, onZipViewed }) => {
   // Initial load
   React.useEffect(() => { fetchData('TX'); }, [fetchData]);
 
+  // Fly to state once map is ready
+  const handleMapLoad = useCallback(() => {
+    const center = STATE_CENTERS['TX'];
+    if (center && mapRef.current) {
+      mapRef.current.flyTo({ center: [center[1], center[0]], zoom: 5.5, duration: 0 });
+    }
+  }, []);
+
   // Build GeoJSON from zip data that has lat/lng
   const geojson = useMemo(() => {
     const features = zipData
@@ -226,6 +234,7 @@ const MapboxROIMap = ({ user, onZipViewed }) => {
           ref={mapRef}
           {...viewState}
           onMove={e => setViewState(e.viewState)}
+          onLoad={handleMapLoad}
           style={{ width: '100%', height: '100%' }}
           mapStyle="mapbox://styles/mapbox/dark-v11"
           mapboxAccessToken={MAPBOX_TOKEN}
