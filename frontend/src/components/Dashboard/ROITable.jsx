@@ -204,7 +204,10 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                       ${(Number(row.median_price) || 0).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-right text-white">
-                      ${(Number(row.median_rent) || 0).toLocaleString()}
+                      ${(cfMode && cf ? cf.rent : Number(row.median_rent) || 0).toLocaleString()}
+                      {cfMode && cf && cf.rentMultiplier !== 1.0 && (
+                        <span className="text-gray-500 text-xs ml-1">({cf.beds}BR)</span>
+                      )}
                     </td>
 
                     {cfMode ? (
@@ -240,8 +243,11 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                       <td colSpan={7} className="px-6 py-4">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                           <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Monthly Income</p>
-                            <p className="text-white font-medium">${cf.rent.toLocaleString()} gross</p>
+                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Monthly Rent</p>
+                            {cf.rentMultiplier !== 1.0 && (
+                              <p className="text-gray-500 text-xs">Base: ${cf.baseRent?.toLocaleString()} × {cf.rentMultiplier}x</p>
+                            )}
+                            <p className="text-white font-medium">${cf.rent.toLocaleString()} est. rent</p>
                             <p className="text-gray-400 text-xs">−${Math.round(cf.vacancyCost)} vacancy</p>
                             <p className="text-emerald-400 text-xs font-medium">
                               = ${Math.round(cf.effectiveRent ?? (cf.rent - cf.vacancyCost)).toLocaleString()} effective

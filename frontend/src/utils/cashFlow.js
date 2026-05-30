@@ -4,6 +4,11 @@
  * Given a zip code's median_price + median_rent and the investor's
  * financing/expense assumptions, returns monthly breakdown and
  * cash-on-cash return.
+ *
+ * Rent adjustment: Zillow ZORI represents a market-wide "typical" rent
+ * (roughly equivalent to a 2BR unit). We scale it by property type using
+ * industry-standard bedroom multipliers so 1BR shows lower and 4BR shows
+ * higher estimated rent.
  */
 
 // Effective property tax rates by state (Tax Foundation 2024, % of home value)
@@ -16,6 +21,19 @@ export const STATE_TAX_RATES = {
   OK: 0.90, OR: 0.91, PA: 1.58, RI: 1.53, SC: 0.57, SD: 1.22, TN: 0.71,
   TX: 1.74, UT: 0.63, VT: 1.83, VA: 0.87, WA: 0.93, WV: 0.59, WI: 1.85,
   WY: 0.58,
+};
+
+/**
+ * Bedroom-size rent multipliers relative to the Zillow ZORI base.
+ * Zillow ZORI is roughly a 2BR market median. These scale it to the
+ * selected bedroom count using typical market rent ratios.
+ */
+export const BEDROOM_MULTIPLIER = {
+  1: 0.75,   // 1BR typically ~25% below 2BR median
+  2: 1.00,   // base — ZORI is approximately 2BR
+  3: 1.18,   // 3BR typically ~18% above 2BR
+  4: 1.38,   // 4BR typically ~38% above 2BR
+  5: 1.55,   // 5BR estimated
 };
 
 /**
@@ -40,52 +58,63 @@ export function monthlyPI(principal, annualRate, termYears = 30) {
  */
 export function calcCashFlow(row, params) {
   const {
-    downPct        = 20,      // % down payment
-    interestRate   = 7.25,    // annual interest rate %
-    loanTermYears  = 30,
-    insuranceRate  = 0.50,    // annual insurance as % of home value
-    taxRateOverride= null,    // if set, overrides state lookup
-    maintenancePct = 5,       // % of monthly rent
-    vacancyPct     = 5,       // % of monthly rent (lost rent)
-    capexPct       = 5,       // % of monthly rent
-    managementPct  = 0,       // % of monthly rent (0 = self-managed)
+    downPct         = 20,         // % down payment
+    interestRate    = 7.25,       // annual interest rate %
+    loanTermYears   = 30,
+    insuranceRate   = 0.50,       // annual insurance as % of home value
+    taxRateOverride = null,       // if set, overrides state lookup
+    maintenancePct  = 5,          // % of monthly rent
+    vacancyPct      = 5,          // % of monthly rent (lost rent)
+    capexPct        = 5,          // % of monthly rent
+    managementPct   = 0,          // % of monthly rent (0 = self-managed)
+    beds            = 3,          // number of bedrooms (drives rent multiplier)
+    baths           = 2,          // number of bathrooms (stored for reference)
   } = params;
 
-  const price = Number(row.median_price);
-  const rent  = Number(row.median_rent);
-  if (!price || !rent) return null;
+  const price   = Number(row.median_price);
+  const baseRent = Number(row.median_rent);
+  if (!price || !baseRent) return null;
+
+  // Scale base rent (Zillow ZORI ≈ 2BR median) by bedroom count
+  const bedCount    = Math.min(Math.max(Math.round(Number(beds) || 3), 1), 5);
+  const multiplier  = BEDROOM_MULTIPLIER[bedCount] ?? 1.0;
+  const rent        = Math.round(baseRent * multiplier);
 
   // Financing
-  const downAmount   = price * (downPct / 100);
-  const loanAmount   = price - downAmount;
-  const pi           = monthlyPI(loanAmount, interestRate, loanTermYears);
+  const downAmount  = price * (downPct / 100);
+  const loanAmount  = price - downAmount;
+  const pi          = monthlyPI(loanAmount, interestRate, loanTermYears);
 
   // PITI
-  const taxRate      = taxRateOverride != null ? taxRateOverride : (STATE_TAX_RATES[row.state] ?? 1.0);
-  const monthlyTax   = price * (taxRate / 100) / 12;
-  const monthlyIns   = price * (insuranceRate / 100) / 12;
-  const piti         = pi + monthlyTax + monthlyIns;
+  const taxRate     = taxRateOverride != null ? taxRateOverride : (STATE_TAX_RATES[row.state] ?? 1.0);
+  const monthlyTax  = price * (taxRate / 100) / 12;
+  const monthlyIns  = price * (insuranceRate / 100) / 12;
+  const piti        = pi + monthlyTax + monthlyIns;
 
-  // Operating reserves (as % of gross rent)
-  const vacancyCost  = rent * (vacancyPct / 100);
-  const maintenance  = rent * (maintenancePct / 100);
-  const capex        = rent * (capexPct / 100);
-  const management   = rent * (managementPct / 100);
-  const totalReserves= vacancyCost + maintenance + capex + management;
+  // Operating reserves (as % of adjusted rent)
+  const vacancyCost   = rent * (vacancyPct   / 100);
+  const maintenance   = rent * (maintenancePct / 100);
+  const capex         = rent * (capexPct      / 100);
+  const management    = rent * (managementPct / 100);
+  const totalReserves = vacancyCost + maintenance + capex + management;
 
   // Net cash flow
-  const effectiveRent      = rent - vacancyCost; // rent after vacancy loss
+  const effectiveRent        = rent - vacancyCost;
   const totalMonthlyExpenses = piti + maintenance + capex + management;
-  const monthlyCashFlow    = effectiveRent - totalMonthlyExpenses;
-  const annualCashFlow     = monthlyCashFlow * 12;
+  const monthlyCashFlow      = effectiveRent - totalMonthlyExpenses;
+  const annualCashFlow       = monthlyCashFlow * 12;
 
   // Returns
-  const cashOnCash         = downAmount > 0 ? (annualCashFlow / downAmount) * 100 : 0;
+  const cashOnCash       = downAmount > 0 ? (annualCashFlow / downAmount) * 100 : 0;
   const maxAffordablePrice = downAmount > 0 ? downAmount / (downPct / 100) : 0;
 
   return {
     price,
-    rent,
+    baseRent,        // Zillow ZORI base (before bedroom adjustment)
+    rent,            // adjusted rent for selected bedroom count
+    rentMultiplier: multiplier,
+    beds: bedCount,
+    baths: Number(baths) || 2,
     downAmount,
     loanAmount,
     pi,

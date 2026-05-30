@@ -12,6 +12,8 @@ const DEFAULT_PARAMS = {
   vacancyPct:     5,
   capexPct:       5,
   managementPct:  0,
+  beds:           3,       // bedrooms (drives rent multiplier)
+  baths:          2,       // bathrooms (informational)
 };
 
 /**
@@ -206,6 +208,36 @@ const CashFlowPanel = ({ params, onChange, activeState }) => {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Property Type ── */}
+        <div className="sm:col-span-2">
+          <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">
+            Target Property
+            <span className="text-gray-500 font-normal normal-case ml-1">(adjusts estimated rent)</span>
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Bedrooms</label>
+              <input
+                type="number"
+                value={local.beds}
+                onChange={e => set('beds', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
+                min="1" max="5" step="1"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Bathrooms</label>
+              <input
+                type="number"
+                value={local.baths}
+                onChange={e => set('baths', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
+                min="1" max="5" step="0.5"
+              />
             </div>
           </div>
         </div>
