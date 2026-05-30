@@ -219,10 +219,10 @@ async function main() {
        VALUES ${values.join(',')}
        ON CONFLICT (zip_code, state) DO UPDATE SET
          median_price        = COALESCE(EXCLUDED.median_price,        zip_data.median_price),
-         median_rent         = COALESCE(EXCLUDED.median_rent,         zip_data.median_rent),
-         rent_to_price_ratio = COALESCE(EXCLUDED.rent_to_price_ratio, zip_data.rent_to_price_ratio),
-         gross_rental_yield  = COALESCE(EXCLUDED.gross_rental_yield,  zip_data.gross_rental_yield),
-         grm                 = COALESCE(EXCLUDED.grm,                 zip_data.grm),
+         median_rent         = EXCLUDED.median_rent,
+         rent_to_price_ratio = EXCLUDED.rent_to_price_ratio,
+         gross_rental_yield  = EXCLUDED.gross_rental_yield,
+         grm                 = EXCLUDED.grm,
          last_updated        = NOW()`,
       params
     );
