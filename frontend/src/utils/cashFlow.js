@@ -72,13 +72,21 @@ export function calcCashFlow(row, params) {
   } = params;
 
   const price   = Number(row.median_price);
-  const baseRent = Number(row.median_rent);
+  const baseRent = Number(row.rent_sfr || row.median_rent); // SFR ZORI preferred
   if (!price || !baseRent) return null;
 
-  // Scale base rent (Zillow ZORI ≈ 2BR median) by bedroom count
-  const bedCount    = Math.min(Math.max(Math.round(Number(beds) || 3), 1), 5);
-  const multiplier  = BEDROOM_MULTIPLIER[bedCount] ?? 1.0;
-  const rent        = Math.round(baseRent * multiplier);
+  const bedCount = Math.min(Math.max(Math.round(Number(beds) || 3), 1), 5);
+
+  // Use HUD county-level bedroom ratios if available, else national multiplier
+  let multiplier;
+  const fmr2 = Number(row.hud_fmr_2br);
+  const fmrN = Number(row[`hud_fmr_${bedCount}br`]);
+  if (fmr2 && fmrN) {
+    multiplier = fmrN / fmr2;
+  } else {
+    multiplier = BEDROOM_MULTIPLIER[bedCount] ?? 1.0;
+  }
+  const rent = Math.round(baseRent * multiplier);
 
   // Financing
   const downAmount  = price * (downPct / 100);

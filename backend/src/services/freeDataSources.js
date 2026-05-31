@@ -313,6 +313,7 @@ module.exports = {
   loadZipStateCountyCsv,
   getStateFromZip,
   parseZillowCsv,
+  parseCsvLine,
   ZIP_PREFIX_TO_STATE,
   FIPS_TO_STATE,
 };

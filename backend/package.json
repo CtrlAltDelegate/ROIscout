@@ -50,7 +50,8 @@
     "pg": "^8.11.3",
     "redis": "^4.7.1",
     "stripe": "^14.25.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/jest": "^29.5.8",
