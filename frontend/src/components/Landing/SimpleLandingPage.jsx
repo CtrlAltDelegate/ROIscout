@@ -112,27 +112,26 @@ const SimpleLandingPage = () => {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-white mb-6">Why I built this</h2>
           <p className="text-slate-300 leading-relaxed mb-4">
-            For years, my market research looked like this: two Zillow tabs open side by side. One filtered
-            for active rentals in a city, one for homes for sale in that same city. I'd manually cross-reference
-            the two — find a neighborhood where rents were strong, find a property at the right price point,
-            then open a spreadsheet and start the math.
+            Real estate investment research is broken. Not because the data doesn't exist — it's all out there.
+            It's because getting to a single answer requires pulling it from five different places, running the
+            math yourself, and starting over every time you look at a new market.
           </p>
           <p className="text-slate-300 leading-relaxed mb-4">
-            I did that for 500+ deals. Long-term rentals in Indianapolis. Short-term and medium-term rentals
-            in Southern California. I went through the full cycle on all of them — bought, managed, sold.
-            The strategy evolved. The two-tab ritual never did.
+            I spent years doing exactly that. Open a tab for active rentals, another for sale listings,
+            cross-reference the two, open a spreadsheet, run the numbers. Repeat for every zip code worth
+            evaluating. It worked — but it was slow, manual, and it never got faster.
           </p>
           <p className="text-slate-300 leading-relaxed mb-10">
-            What I wanted was simple: one tool that overlaid both sides of the equation — what homes cost
-            and what they rent for, by zip code, with the yield math already done. That tool didn't exist.
-            So I built it.
+            What I wanted was one tool that already knew what rent-to-price ratios looked like across every
+            US market, had the yield math done, and let me filter to what actually penciled. That tool didn't
+            exist. So I built it.
           </p>
 
           <div className="border-t border-slate-700 pt-8 flex flex-wrap gap-10">
             {[
-              { n: '500+',     label: 'Deals analyzed' },
-              { n: '3',        label: 'Strategies (LTR, STR, MTR)' },
-              { n: '2 markets',label: 'Indianapolis & Southern California' },
+              { n: '1,000+', label: 'Deals analyzed' },
+              { n: '8,000+', label: 'Markets tracked' },
+              { n: '36',     label: 'States covered' },
             ].map(({ n, label }) => (
               <div key={label}>
                 <div className="text-3xl font-bold text-green-400">{n}</div>

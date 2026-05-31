@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Calculator } from 'lucide-react';
 import { monthlyPI, STATE_TAX_RATES } from '../../utils/cashFlow';
 
 const DEFAULT_PARAMS = {
@@ -72,8 +73,8 @@ const CashFlowPanel = ({ params, onChange, activeState }) => {
       {/* Panel header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="text-base font-semibold text-white flex items-center gap-2">
-            💰 Cash Flow Calculator
+          <h3 className="text-base font-semibold text-white flex items-center">
+            <Calculator className="w-5 h-5 text-green-400 mr-2 inline-block" />Cash Flow Calculator
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
             Rank markets by cash-on-cash return based on your investment parameters.

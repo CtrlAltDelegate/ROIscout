@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import {
-  Map, Search, BarChart2, Bookmark, Calculator,
+  Map, Search, BarChart2, Bookmark, Calculator, Star,
   TrendingUp, Building2, Target, Zap, Info,
 } from 'lucide-react';
 import MapboxROIMap from '../Map/MapboxROIMap';
@@ -137,27 +137,6 @@ const ROIscoutDashboard = ({ user }) => {
       case 'analytics': {
         return (
           <div className="space-y-5">
-            {/* Summary tiles */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Avg Gross Yield</p>
-                <p className="text-3xl font-semibold text-slate-900 mt-1">{stats ? `${stats.avgYield}%` : '—'}</p>
-                <p className="text-sm text-slate-500 mt-0.5">Across all tracked zips</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Exceptional ZIPs ≥10%</p>
-                <p className="text-3xl font-semibold text-slate-900 mt-1">{stats ? stats.exceptionalCount.toLocaleString() : '—'}</p>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  {stats ? `${((stats.exceptionalCount / stats.totalZips) * 100).toFixed(1)}% of universe` : ''}
-                </p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">States Covered</p>
-                <p className="text-3xl font-semibold text-slate-900 mt-1">{stats ? stats.statesCovered : '—'}</p>
-                <p className="text-sm text-slate-500 mt-0.5">{stats ? `${stats.totalZips.toLocaleString()} zip codes total` : ''}</p>
-              </div>
-            </div>
-
             {analyticsLoading && (
               <div className="flex items-center justify-center h-48 bg-white rounded-xl border border-slate-200">
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent" />
@@ -232,7 +211,7 @@ const ROIscoutDashboard = ({ user }) => {
       case 'saved':
         return (
           <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
-            <div className="text-3xl mb-3">🔖</div>
+            <Bookmark className="w-10 h-10 text-slate-300 mb-3 mx-auto" />
             <p className="text-slate-700 font-medium text-sm">No saved searches yet</p>
             <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto leading-relaxed">
               Use the <strong>Search &amp; List</strong> tab to filter by state, price, and rent —
@@ -295,9 +274,9 @@ const ROIscoutDashboard = ({ user }) => {
           <div className="bg-white border-b border-slate-200 px-6 py-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
-                Icon={Building2}
-                iconBg="bg-blue-50"
-                iconColor="text-blue-500"
+                Icon={Map}
+                iconBg="bg-slate-100"
+                iconColor="text-slate-500"
                 label="Zip Codes Tracked"
                 value={statsLoading ? '…' : stats ? stats.totalZips.toLocaleString() : '—'}
                 sub={stats ? `${stats.statesCovered} states` : null}
@@ -311,17 +290,17 @@ const ROIscoutDashboard = ({ user }) => {
                 sub="Across all markets"
               />
               <StatCard
-                Icon={Zap}
-                iconBg="bg-amber-50"
-                iconColor="text-amber-500"
+                Icon={Target}
+                iconBg="bg-green-50"
+                iconColor="text-green-600"
                 label="Exceptional ZIPs ≥10%"
                 value={statsLoading ? '…' : stats ? stats.exceptionalCount.toLocaleString() : '—'}
                 sub="High-yield markets"
               />
               <StatCard
-                Icon={Target}
-                iconBg="bg-purple-50"
-                iconColor="text-purple-500"
+                Icon={Star}
+                iconBg="bg-slate-100"
+                iconColor="text-slate-500"
                 label="High-Yield ZIPs ≥8%"
                 value={statsLoading ? '…' : stats ? stats.excellentCount.toLocaleString() : '—'}
                 sub="Strong performers"

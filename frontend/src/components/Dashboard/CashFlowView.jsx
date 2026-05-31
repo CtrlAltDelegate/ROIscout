@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Calculator } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { monthlyPI, STATE_TAX_RATES } from '../../utils/cashFlow';
 import ROITable from './ROITable';
@@ -144,7 +145,7 @@ const CashFlowView = ({ user }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-base font-semibold text-white">💰 Cash Flow Calculator</h3>
+            <h3 className="text-base font-semibold text-white flex items-center"><Calculator className="w-5 h-5 text-green-400 mr-2 inline-block" />Cash Flow Calculator</h3>
             <p className="text-xs text-gray-400 mt-0.5">
               We use Zillow ZORI median rents per zip — you never need to enter rent.
               Set your investment parameters and pick a state to rank markets by cash-on-cash return.
