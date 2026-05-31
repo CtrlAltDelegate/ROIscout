@@ -17,16 +17,10 @@ import ROITable from './ROITable';
 
 // States are loaded from the API — only states with actual Zillow data are shown
 
-const PROPERTY_TYPES = [
-  { value: '3bed2bath', label: '3 Bed / 2 Bath' },
-  { value: '2bed2bath', label: '2 Bed / 2 Bath' },
-  { value: '4bed3bath', label: '4 Bed / 3 Bath' },
-  { value: '1bed1bath', label: '1 Bed / 1 Bath' },
-];
-
 const DEFAULT_PARAMS = {
   state:           '',
-  propertyType:    '3bed2bath',
+  beds:            3,
+  baths:           2,
   downBudget:      50000,
   downPct:         20,
   interestRate:    7.25,
@@ -92,12 +86,12 @@ const CashFlowView = ({ user }) => {
     apiService.getStates().then(r => setStates(r.data || [])).catch(() => setStates([]));
   }, []);
 
-  // Fetch zip data when state or propertyType changes
-  const fetchData = useCallback(async (state, propertyType) => {
+  // Fetch zip data when state changes
+  const fetchData = useCallback(async (state) => {
     if (!state) { setData([]); return; }
     setLoading(true); setError(null);
     try {
-      const res = await apiService.getPricingData({ state, propertyType, limit: 500 });
+      const res = await apiService.getPricingData({ state, limit: 500 });
       setData(res.data || []);
       setDataLastUpdated(res.dataLastUpdated ?? null);
       setDataSources(res.dataSources ?? null);
@@ -109,8 +103,8 @@ const CashFlowView = ({ user }) => {
   }, []);
 
   useEffect(() => {
-    fetchData(params.state, params.propertyType);
-  }, [params.state, params.propertyType, fetchData]);
+    fetchData(params.state);
+  }, [params.state, fetchData]);
 
   const set = (field, raw) => {
     setParams(prev => ({ ...prev, [field]: raw === '' ? '' : (field === 'taxRateOverride' ? (raw === '' ? null : Number(raw)) : (isNaN(Number(raw)) ? raw : Number(raw))) }));
@@ -137,7 +131,7 @@ const CashFlowView = ({ user }) => {
 
   const handleExportCSV = async () => {
     setExporting(true);
-    try { await apiService.exportCSV({ state: params.state, propertyType: params.propertyType }); }
+    try { await apiService.exportCSV({ state: params.state, beds: params.beds, baths: params.baths }); }
     catch { /* swallow */ }
     finally { setExporting(false); }
   };
@@ -177,12 +171,24 @@ const CashFlowView = ({ user }) => {
                 </select>
               </div>
               <div>
-                <FieldLabel>Property Type</FieldLabel>
-                <select value={params.propertyType} onChange={e => setRaw('propertyType', e.target.value)} className={selectCls}>
-                  {PROPERTY_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
+                <FieldLabel>Bedrooms</FieldLabel>
+                <input
+                  type="number"
+                  value={params.beds}
+                  onChange={e => set('beds', e.target.value)}
+                  className={inputCls}
+                  min="1" max="5" step="1"
+                />
+              </div>
+              <div>
+                <FieldLabel>Bathrooms</FieldLabel>
+                <input
+                  type="number"
+                  value={params.baths}
+                  onChange={e => set('baths', e.target.value)}
+                  className={inputCls}
+                  min="1" max="5" step="0.5"
+                />
                 <p className="text-[11px] text-gray-500 mt-1">
                   Rent sourced from Zillow ZORI — zip-level market median
                 </p>
