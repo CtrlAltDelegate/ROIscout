@@ -79,6 +79,31 @@ const dataController = {
           rent_to_price_ratio,
           gross_rental_yield,
           grm,
+          -- Growth rates
+          rent_growth_1yr,
+          rent_growth_3yr,
+          price_growth_1yr,
+          price_growth_5yr,
+          -- Market indicators
+          days_on_market,
+          for_sale_inventory,
+          price_cut_pct,
+          market_heat_index,
+          renter_affordability,
+          sale_to_list_ratio,
+          new_listings_count,
+          median_list_price,
+          -- Demographics
+          median_household_income,
+          population,
+          rent_to_income_ratio,
+          -- Bedroom-specific prices
+          price_sfr,
+          price_1br,
+          price_2br,
+          price_3br,
+          price_4br,
+          price_5br,
           lat,
           lng,
           last_updated

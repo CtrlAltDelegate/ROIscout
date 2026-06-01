@@ -2,6 +2,38 @@ import React, { useState, useMemo } from 'react';
 import DataFreshnessBadge from '../Shared/DataFreshnessBadge';
 import { calcCashFlow } from '../../utils/cashFlow';
 
+/** Format a growth rate with +/- sign and color */
+const GrowthBadge = ({ value, label }) => {
+  if (value == null) return <span className="text-gray-600 text-xs">—</span>;
+  const n = Number(value);
+  const color = n >= 3 ? 'text-emerald-400' : n >= 0 ? 'text-yellow-400' : 'text-red-400';
+  return (
+    <span className={`text-xs font-medium ${color}`}>
+      {n >= 0 ? '+' : ''}{n.toFixed(1)}%{label ? <span className="text-gray-500 font-normal ml-0.5">{label}</span> : null}
+    </span>
+  );
+};
+
+/** Market health dot indicator */
+const MarketDot = ({ row }) => {
+  const dom  = Number(row.days_on_market);
+  const heat = Number(row.market_heat_index);
+  const cut  = Number(row.price_cut_pct);
+  if (!dom && !heat) return null;
+  // Hot market = low DOM + high heat + low price cuts
+  const score = (heat > 60 ? 2 : heat > 40 ? 1 : 0)
+              + (dom > 0 && dom < 20 ? 2 : dom < 35 ? 1 : 0)
+              + (cut < 15 ? 1 : 0);
+  const color = score >= 4 ? 'bg-red-400' : score >= 2 ? 'bg-yellow-400' : 'bg-emerald-400';
+  const label = score >= 4 ? 'Hot' : score >= 2 ? 'Warm' : 'Balanced';
+  return (
+    <span className="ml-1.5 inline-flex items-center gap-1">
+      <span className={`w-1.5 h-1.5 rounded-full ${color} inline-block`} />
+      <span className="text-gray-500 text-xs">{label}</span>
+    </span>
+  );
+};
+
 /** Colour cash flow values green / red */
 const cfColor = (val) => (val >= 0 ? 'text-emerald-400' : 'text-red-400');
 
@@ -190,16 +222,17 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
               return (
                 <React.Fragment key={`${row.zip_code}-${index}`}>
                   <tr
-                    className={`hover:bg-gray-700/40 transition-colors ${cfMode ? 'cursor-pointer' : ''}`}
-                    onClick={() => cfMode && setExpandedRow(isExpanded ? null : `${row.zip_code}-${index}`)}
+                    className="hover:bg-gray-700/40 transition-colors cursor-pointer"
+                    onClick={() => setExpandedRow(isExpanded ? null : `${row.zip_code}-${index}`)}
                   >
                     <td className="px-4 py-3 text-white font-medium">
                       {row.zip_code}
-                      {cfMode && (
-                        <span className="ml-1.5 text-gray-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
-                      )}
+                      <span className="ml-1.5 text-gray-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-300 text-sm">{row.county}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">
+                      {row.county}
+                      <MarketDot row={row} />
+                    </td>
                     <td className="px-4 py-3 text-right text-white">
                       ${(Number(row.median_price) || 0).toLocaleString()}
                     </td>
@@ -237,54 +270,189 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                     )}
                   </tr>
 
-                  {/* Expanded cash-flow breakdown row */}
-                  {cfMode && isExpanded && cf && (
+                  {/* Expanded detail row — all modes */}
+                  {isExpanded && (
                     <tr className="bg-gray-900/60">
-                      <td colSpan={7} className="px-6 py-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Monthly Rent</p>
-                            {cf.rentMultiplier !== 1.0 && (
-                              <p className="text-gray-500 text-xs">Base: ${cf.baseRent?.toLocaleString()} × {cf.rentMultiplier}x</p>
-                            )}
-                            <p className="text-white font-medium">${cf.rent.toLocaleString()} est. rent</p>
-                            <p className="text-gray-400 text-xs">−${Math.round(cf.vacancyCost)} vacancy</p>
-                            <p className="text-emerald-400 text-xs font-medium">
-                              = ${Math.round(cf.effectiveRent ?? (cf.rent - cf.vacancyCost)).toLocaleString()} effective
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">PITI</p>
-                            <p className="text-white font-medium">${Math.round(cf.piti).toLocaleString()}/mo</p>
-                            <p className="text-gray-400 text-xs">P&amp;I ${Math.round(cf.pi).toLocaleString()}</p>
-                            <p className="text-gray-400 text-xs">
-                              Tax ${Math.round(cf.monthlyTax).toLocaleString()} · Ins ${Math.round(cf.monthlyIns).toLocaleString()}
-                            </p>
-                            <p className="text-gray-500 text-xs">Tax rate: {cf.taxRateUsed.toFixed(2)}%</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Reserves</p>
-                            <p className="text-gray-400 text-xs">Maint. ${Math.round(cf.maintenance)}</p>
-                            <p className="text-gray-400 text-xs">CapEx ${Math.round(cf.capex)}</p>
-                            {cf.management > 0 && (
-                              <p className="text-gray-400 text-xs">Mgmt. ${Math.round(cf.management)}</p>
-                            )}
-                            <p className="text-white text-xs font-medium">
-                              Total ${Math.round(cf.totalReserves)}/mo
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Returns</p>
-                            <p className={`font-bold text-lg ${cfColor(cf.monthlyCashFlow)}`}>
-                              {cf.monthlyCashFlow >= 0 ? '+' : ''}${Math.round(cf.monthlyCashFlow).toLocaleString()}/mo
-                            </p>
-                            <p className={`text-sm font-semibold ${cocColor(cf.cashOnCash)}`}>
-                              {cf.cashOnCash.toFixed(1)}% CoC
-                            </p>
-                            <p className="text-gray-400 text-xs">
-                              Down: ${Math.round(cf.downAmount).toLocaleString()}
-                            </p>
-                          </div>
+                      <td colSpan={7} className="px-6 py-5">
+                        <div className="space-y-4">
+
+                          {/* CF breakdown (CF mode only) */}
+                          {cfMode && cf && (
+                            <div>
+                              <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider mb-2">Cash Flow Breakdown</p>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Monthly Rent</p>
+                                  {cf.rentMultiplier !== 1.0 && (
+                                    <p className="text-gray-500 text-xs">Base: ${cf.baseRent?.toLocaleString()} × {cf.rentMultiplier.toFixed(2)}x</p>
+                                  )}
+                                  <p className="text-white font-medium">${cf.rent.toLocaleString()} est. rent</p>
+                                  <p className="text-gray-400 text-xs">−${Math.round(cf.vacancyCost)} vacancy</p>
+                                  <p className="text-emerald-400 text-xs font-medium">= ${Math.round(cf.effectiveRent ?? (cf.rent - cf.vacancyCost)).toLocaleString()} effective</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">PITI</p>
+                                  <p className="text-white font-medium">${Math.round(cf.piti).toLocaleString()}/mo</p>
+                                  <p className="text-gray-400 text-xs">P&amp;I ${Math.round(cf.pi).toLocaleString()}</p>
+                                  <p className="text-gray-400 text-xs">Tax ${Math.round(cf.monthlyTax).toLocaleString()} · Ins ${Math.round(cf.monthlyIns).toLocaleString()}</p>
+                                  <p className="text-gray-500 text-xs">Rate: {cf.taxRateUsed.toFixed(2)}%</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Reserves</p>
+                                  <p className="text-gray-400 text-xs">Maint. ${Math.round(cf.maintenance)}</p>
+                                  <p className="text-gray-400 text-xs">CapEx ${Math.round(cf.capex)}</p>
+                                  {cf.management > 0 && <p className="text-gray-400 text-xs">Mgmt. ${Math.round(cf.management)}</p>}
+                                  <p className="text-white text-xs font-medium">Total ${Math.round(cf.totalReserves)}/mo</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Returns</p>
+                                  <p className={`font-bold text-lg ${cfColor(cf.monthlyCashFlow)}`}>
+                                    {cf.monthlyCashFlow >= 0 ? '+' : ''}${Math.round(cf.monthlyCashFlow).toLocaleString()}/mo
+                                  </p>
+                                  <p className={`text-sm font-semibold ${cocColor(cf.cashOnCash)}`}>{cf.cashOnCash.toFixed(1)}% CoC</p>
+                                  <p className="text-gray-400 text-xs">Down: ${Math.round(cf.downAmount).toLocaleString()}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Price & Rent Trends */}
+                          {(row.price_growth_1yr != null || row.rent_growth_1yr != null) && (
+                            <div>
+                              <p className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Price &amp; Rent Trends</p>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                                <div>
+                                  <p className="text-gray-500 text-xs mb-0.5">Price Growth 1yr</p>
+                                  <GrowthBadge value={row.price_growth_1yr} />
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-xs mb-0.5">Price Growth 5yr</p>
+                                  <GrowthBadge value={row.price_growth_5yr} />
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-xs mb-0.5">Rent Growth 1yr</p>
+                                  <GrowthBadge value={row.rent_growth_1yr} />
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-xs mb-0.5">Rent Growth 3yr</p>
+                                  <GrowthBadge value={row.rent_growth_3yr} />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Market Health */}
+                          {(row.days_on_market != null || row.market_heat_index != null) && (
+                            <div>
+                              <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">Market Conditions</p>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                                {row.days_on_market != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Days to Pending</p>
+                                    <p className="text-white font-medium">{Math.round(row.days_on_market)} days</p>
+                                  </div>
+                                )}
+                                {row.market_heat_index != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Market Heat Index</p>
+                                    <p className="text-white font-medium">{Number(row.market_heat_index).toFixed(1)}</p>
+                                    <p className="text-gray-500 text-xs">{Number(row.market_heat_index) > 60 ? 'Seller\'s market' : Number(row.market_heat_index) > 40 ? 'Neutral' : 'Buyer\'s market'}</p>
+                                  </div>
+                                )}
+                                {row.price_cut_pct != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Listings w/ Price Cut</p>
+                                    <p className="text-white font-medium">{Number(row.price_cut_pct).toFixed(1)}%</p>
+                                  </div>
+                                )}
+                                {row.sale_to_list_ratio != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Sale-to-List Ratio</p>
+                                    <p className="text-white font-medium">{(Number(row.sale_to_list_ratio) * 100).toFixed(1)}%</p>
+                                  </div>
+                                )}
+                                {row.for_sale_inventory != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">For-Sale Inventory</p>
+                                    <p className="text-white font-medium">{Number(row.for_sale_inventory).toLocaleString()}</p>
+                                  </div>
+                                )}
+                                {row.new_listings_count != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">New Listings/Mo</p>
+                                    <p className="text-white font-medium">{Number(row.new_listings_count).toLocaleString()}</p>
+                                  </div>
+                                )}
+                                {row.median_list_price != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Median List Price</p>
+                                    <p className="text-white font-medium">${Number(row.median_list_price).toLocaleString()}</p>
+                                  </div>
+                                )}
+                                {row.renter_affordability != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Renter Affordability</p>
+                                    <p className={`font-medium ${Number(row.renter_affordability) > 30 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                      {Number(row.renter_affordability).toFixed(1)}% of income
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Demographics */}
+                          {(row.median_household_income != null || row.population != null) && (
+                            <div>
+                              <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2">Demographics</p>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                                {row.median_household_income != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Median HH Income</p>
+                                    <p className="text-white font-medium">${Number(row.median_household_income).toLocaleString()}</p>
+                                  </div>
+                                )}
+                                {row.rent_to_income_ratio != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Rent-to-Income</p>
+                                    <p className={`font-medium ${Number(row.rent_to_income_ratio) > 30 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                      {Number(row.rent_to_income_ratio).toFixed(1)}%
+                                    </p>
+                                    <p className="text-gray-500 text-xs">{Number(row.rent_to_income_ratio) > 30 ? 'Cost-burdened' : 'Affordable'}</p>
+                                  </div>
+                                )}
+                                {row.population != null && (
+                                  <div>
+                                    <p className="text-gray-500 text-xs mb-0.5">Population</p>
+                                    <p className="text-white font-medium">{Number(row.population).toLocaleString()}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Bedroom Price Ladder */}
+                          {(row.price_1br != null || row.price_3br != null) && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Median Home Price by Bedrooms</p>
+                              <div className="flex flex-wrap gap-3">
+                                {[
+                                  { label: '1BR', val: row.price_1br },
+                                  { label: '2BR', val: row.price_2br },
+                                  { label: '3BR', val: row.price_3br },
+                                  { label: '4BR', val: row.price_4br },
+                                  { label: '5BR+', val: row.price_5br },
+                                  { label: 'SFR', val: row.price_sfr },
+                                ].filter(r => r.val != null).map(({ label, val }) => (
+                                  <div key={label} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-center min-w-[70px]">
+                                    <p className="text-gray-400 text-xs">{label}</p>
+                                    <p className="text-white font-semibold text-sm">${Math.round(val / 1000)}k</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                         </div>
                       </td>
                     </tr>
@@ -355,6 +523,7 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
             <span className="text-yellow-400 ml-2">Fair (6–8%)</span>
             <span className="text-orange-400 ml-2">Poor (4–6%)</span>
             <span className="text-red-400 ml-2">Very Poor (&lt;4%)</span>
+            <span className="text-gray-600 ml-4">· Click any row to expand market details</span>
           </>
         )}
       </div>
