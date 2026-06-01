@@ -172,6 +172,93 @@ async function parseZillowCsv(filePathOrUrl, options = {}) {
   return result;
 }
 
+/**
+ * Parse Zillow CSV and return multiple historical values per zip.
+ * Returns array of { zipCode, state, latest, ago12m, ago36m, ago60m }
+ * where each value is the numeric figure for that month (or null if not present).
+ */
+async function parseZillowCsvMultiDate(filePathOrUrl) {
+  let content;
+  if (filePathOrUrl.startsWith('http')) {
+    const res = await axios.get(filePathOrUrl, { responseType: 'text', timeout: 120000 });
+    content = res.data;
+  } else {
+    const fullPath = path.isAbsolute(filePathOrUrl) ? filePathOrUrl : path.resolve(process.cwd(), filePathOrUrl);
+    if (!fs.existsSync(fullPath)) throw new Error(`File not found: ${fullPath}`);
+    content = fs.readFileSync(fullPath, 'utf8');
+  }
+
+  const lines = content.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const header  = parseCsvLine(lines[0]);
+  const zipIdx   = header.findIndex(h => /RegionName|Region|Zip|ZIP|zip_code/i.test(h));
+  const stateIdx = header.findIndex(h => /^State$|^StateName$/i.test(h));
+
+  // Collect all date columns and sort chronologically
+  const dateCols = header
+    .map((h, i) => ({ h: h.trim(), i }))
+    .filter(({ h }) => /^\d{4}-\d{2}-\d{2}$/.test(h))
+    .sort((a, b) => a.h.localeCompare(b.h));
+
+  if (dateCols.length === 0) return [];
+
+  const latestCol = dateCols[dateCols.length - 1];
+
+  // Find column closest to N months before latest
+  function colNMonthsAgo(months) {
+    const [y, m] = latestCol.h.split('-').map(Number);
+    const target = new Date(y, m - 1 - months, 1);
+    const targetStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}`;
+    // Find nearest available date
+    const candidates = dateCols.filter(c => c.h.startsWith(targetStr));
+    if (candidates.length > 0) return candidates[0];
+    // Fall back to closest
+    return dateCols.reduce((best, cur) => {
+      const bd = Math.abs(new Date(best.h) - new Date(targetStr + '-01'));
+      const cd = Math.abs(new Date(cur.h)  - new Date(targetStr + '-01'));
+      return cd < bd ? cur : best;
+    });
+  }
+
+  const col12m = colNMonthsAgo(12);
+  const col36m = colNMonthsAgo(36);
+  const col60m = colNMonthsAgo(60);
+
+  const result = [];
+  for (let i = 1; i < lines.length; i++) {
+    const row    = parseCsvLine(lines[i]);
+    const zipRaw = zipIdx >= 0 ? row[zipIdx] : '';
+    const zip    = String(zipRaw).replace(/\D/g, '').slice(0, 5);
+    if (zip.length !== 5) continue;
+
+    const zipState = getStateFromZip(zip);
+    const csvState = stateIdx >= 0 && row[stateIdx] ? String(row[stateIdx]).trim().toUpperCase().slice(0, 2) : null;
+    const state    = zipState || csvState;
+
+    const parseVal = idx => {
+      const raw = row[idx];
+      if (!raw || raw === '') return null;
+      const n = parseFloat(String(raw).replace(/[,$]/g, ''));
+      return Number.isNaN(n) || n <= 0 ? null : Math.round(n);
+    };
+
+    const latest = parseVal(latestCol.i);
+    if (!latest) continue;
+
+    result.push({
+      zipCode: zip,
+      state,
+      latest,
+      ago12m: parseVal(col12m.i),
+      ago36m: parseVal(col36m.i),
+      ago60m: parseVal(col60m.i),
+    });
+  }
+
+  return result;
+}
+
 function parseCsvLine(line) {
   const out = [];
   let cur = '';
@@ -313,6 +400,7 @@ module.exports = {
   loadZipStateCountyCsv,
   getStateFromZip,
   parseZillowCsv,
+  parseZillowCsvMultiDate,
   parseCsvLine,
   ZIP_PREFIX_TO_STATE,
   FIPS_TO_STATE,
