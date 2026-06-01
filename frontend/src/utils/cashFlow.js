@@ -71,11 +71,18 @@ export function calcCashFlow(row, params) {
     baths           = 2,          // number of bathrooms (stored for reference)
   } = params;
 
-  const price   = Number(row.median_price);
-  const baseRent = Number(row.rent_sfr || row.median_rent); // SFR ZORI preferred
-  if (!price || !baseRent) return null;
-
   const bedCount = Math.min(Math.max(Math.round(Number(beds) || 3), 1), 5);
+
+  // Price: use bedroom-specific ZHVI if available, fall back to SFR, then all-homes median
+  const bedroomPrice = bedCount <= 4
+    ? Number(row[`price_${bedCount}br`] || 0)
+    : Number(row.price_5br || 0);
+  const price = bedroomPrice || Number(row.price_sfr || row.median_price);
+  if (!price) return null;
+
+  // Rent: use SFR ZORI base if available, fall back to all-homes ZORI
+  const baseRent = Number(row.rent_sfr || row.median_rent);
+  if (!baseRent) return null;
 
   // Use HUD county-level bedroom ratios if available, else national multiplier
   let multiplier;

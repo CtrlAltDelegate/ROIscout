@@ -1,14 +1,21 @@
 /**
  * enrich-market-indicators.js
  *
- * Downloads Zillow metro-level market health CSVs and maps them to
- * zip codes via the HUD ZIP-CBSA crosswalk:
+ * Maps Zillow metro-level market indicator CSVs to zip codes.
  *
- *   days_on_market     — median days to pending sale
- *   for_sale_inventory — active for-sale listing count
- *   price_cut_pct      — % of listings with a price reduction
+ * Matching chain:
+ *   Zillow RegionName (metro name) → normalize → match HUD FMR metro name
+ *   → get CBSA code → look up zip via HUD ZIP-CBSA crosswalk
  *
- * All three are metro (MSA) level from Zillow Research — free, no auth.
+ * Required files in backend/data/:
+ *   inventory.csv            — For-Sale Inventory (Smooth, All Homes, Monthly)
+ *   days_pending.csv         — Mean Days to Pending (Smooth, All Homes, Monthly)
+ *   price_cuts.csv           — Share of Listings With a Price Cut (Smooth, Monthly)
+ *   market_heat_index.csv    — Market Heat Index (All Homes, Monthly)
+ *   renter_affordability.csv — New Renter Affordability (Metro & US)
+ *   sale_to_list.csv         — Median Sale-to-List Ratio (Smooth, All Homes, Monthly)
+ *   new_listings.csv         — New Listings (Smooth, All Homes, Monthly)
+ *   median_list_price.csv    — Median List Price (Smooth, SFR Only, Monthly)
  *
  * Usage: node scripts/enrich-market-indicators.js
  */
@@ -17,81 +24,66 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 const path = require('path');
+const fs   = require('fs');
 const XLSX = require('xlsx');
 const { Pool } = require('pg');
 const { parseCsvLine } = require('../src/services/freeDataSources');
-const fs = require('fs');
 
 const DATA_DIR   = path.join(__dirname, '../data');
 const BATCH_SIZE = 200;
 
-// Expected local filenames in backend/data/
-// Download from zillow.com/research/data → "For-Sale Listings" section:
-//   days_pending.csv  → "Days to Pending" → Metro & U.S. → Download
-//   inventory.csv     → "For-Sale Inventory" → Metro & U.S. → Download
-//   price_cuts.csv    → "Price Cuts" → Metro & U.S. → Download
-const LOCAL_FILES = {
-  dom:       path.join(DATA_DIR, 'days_pending.csv'),
-  inventory: path.join(DATA_DIR, 'inventory.csv'),
-  priceCut:  path.join(DATA_DIR, 'price_cuts.csv'),
-};
+const METRO_FILES = [
+  { file: 'inventory.csv',            dbCol: 'for_sale_inventory',  round: true  },
+  { file: 'days_pending.csv',         dbCol: 'days_on_market',      round: true  },
+  { file: 'price_cuts.csv',           dbCol: 'price_cut_pct',       round: false },
+  { file: 'market_heat_index.csv',    dbCol: 'market_heat_index',   round: false },
+  { file: 'renter_affordability.csv', dbCol: 'renter_affordability',round: false },
+  { file: 'sale_to_list.csv',         dbCol: 'sale_to_list_ratio',  round: false },
+  { file: 'new_listings.csv',         dbCol: 'new_listings_count',  round: true  },
+  { file: 'median_list_price.csv',    dbCol: 'median_list_price',   round: true  },
+];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Name normalization (same logic as enrich-bedroom-rents.js) ────────────────
 
-function readLocalCsv(filePath, label) {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(
-      `Missing file: ${path.basename(filePath)}\n` +
-      `  Download from zillow.com/research/data → "${label}" → Metro & U.S. → Download\n` +
-      `  Save as: ${filePath}`
-    );
-  }
-  console.log(`  Reading: ${path.basename(filePath)}`);
-  return fs.readFileSync(filePath, 'utf8');
+function normalizeName(name) {
+  return String(name)
+    .replace(/\s*(hud metro fmr area|metro fmr area|metropolitan statistical area|metropolitan area|metro area|msa)\s*/gi, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Parse a Zillow metro CSV and return Map<cbsaCode, latestValue>.
- * Metro CSVs have a RegionID column that IS the CBSA code.
- */
-function parseMetroCsv(content) {
-  const lines = content.split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return new Map();
-
-  const header = parseCsvLine(lines[0]);
-  const regionIdIdx   = header.findIndex(h => /RegionID/i.test(h));
-  const regionTypeIdx = header.findIndex(h => /RegionType/i.test(h));
-
-  // Latest date column
-  const dateCols = header
-    .map((h, i) => ({ h: h.trim(), i }))
-    .filter(({ h }) => /^\d{4}-\d{2}-\d{2}$/.test(h))
-    .sort((a, b) => a.h.localeCompare(b.h));
-  const lastCol = dateCols[dateCols.length - 1];
-  if (!lastCol) return new Map();
-
-  console.log(`    Latest date: ${lastCol.h}`);
-
-  const map = new Map();
-  for (let i = 1; i < lines.length; i++) {
-    const row  = parseCsvLine(lines[i]);
-    const type = regionTypeIdx >= 0 ? String(row[regionTypeIdx] || '').toLowerCase() : '';
-    if (type && type !== 'msa' && type !== 'metro') continue;
-
-    const cbsa = String(row[regionIdIdx] || '').trim();
-    if (!cbsa) continue;
-
-    const raw = row[lastCol.i];
-    if (!raw || raw === '') continue;
-    const val = parseFloat(String(raw).replace(/[,%]/g, ''));
-    if (Number.isNaN(val)) continue;
-
-    map.set(cbsa, val);
-  }
-  return map;
+function metroKey(normalized) {
+  const commaIdx = normalized.lastIndexOf(',');
+  if (commaIdx === -1) return null;
+  const primaryCity  = normalized.slice(0, commaIdx).trim().split('-')[0].trim();
+  const primaryState = normalized.slice(commaIdx + 1).trim().split('-')[0].trim().slice(0, 2);
+  return `${primaryCity}|${primaryState}`;
 }
 
-/** Load ZIP-CBSA crosswalk → Map<zip5, cbsaCode> */
+// ── Load HUD FMR → Map<metroKey, cbsaCode> ───────────────────────────────────
+
+function loadHudMetroKeys() {
+  const wb   = XLSX.readFile(path.join(DATA_DIR, 'hud_fmr.xlsx'));
+  const ws   = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+  const hdr  = rows[0];
+  const areaCodeIdx = hdr.indexOf('hud_area_code');
+  const areaNameIdx = hdr.indexOf('hud_area_name');
+
+  const keyToCbsa = new Map();
+  for (let i = 1; i < rows.length; i++) {
+    const row      = rows[i];
+    const areaCode = String(row[areaCodeIdx] || '');
+    const cbsaMatch = areaCode.match(/METRO(\d+)M/);
+    if (!cbsaMatch) continue;
+    const cbsa = cbsaMatch[1];
+    const key  = metroKey(normalizeName(String(row[areaNameIdx] || '')));
+    if (key) keyToCbsa.set(key, cbsa);
+  }
+  return keyToCbsa;
+}
+
+// ── Load ZIP-CBSA → Map<zip5, cbsaCode> ──────────────────────────────────────
+
 function loadZipCbsa() {
   const wb   = XLSX.readFile(path.join(DATA_DIR, 'hud_zip_cbsa.xlsx'));
   const ws   = wb.Sheets[wb.SheetNames[0]];
@@ -111,9 +103,51 @@ function loadZipCbsa() {
     const prev = best.get(zip);
     if (!prev || res > prev.res) best.set(zip, { cbsa, res });
   }
-
   const map = new Map();
   for (const [zip, { cbsa }] of best) map.set(zip, cbsa);
+  return map;
+}
+
+// ── Parse Zillow metro CSV → Map<cbsaCode, latestValue> ─────────────────────
+// Matches via metro name → HUD key → CBSA code
+
+function parseMetroCsv(filePath, hudKeyToCbsa) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const lines   = content.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return new Map();
+
+  const header       = parseCsvLine(lines[0]);
+  const nameIdx      = header.findIndex(h => /RegionName/i.test(h));
+  const regionTypeIdx= header.findIndex(h => /RegionType/i.test(h));
+
+  const dateCols = header
+    .map((h, i) => ({ h: h.trim(), i }))
+    .filter(({ h }) => /^\d{4}-\d{2}-\d{2}$/.test(h))
+    .sort((a, b) => a.h.localeCompare(b.h));
+
+  if (!dateCols.length) return new Map();
+  const lastCol = dateCols[dateCols.length - 1];
+
+  const map = new Map();
+  for (let i = 1; i < lines.length; i++) {
+    const row  = parseCsvLine(lines[i]);
+    const type = regionTypeIdx >= 0 ? String(row[regionTypeIdx] || '').toLowerCase() : '';
+    if (type && type !== 'msa' && type !== 'metro' && type !== 'msa division') continue;
+
+    const regionName = String(row[nameIdx] || '').trim();
+    if (!regionName) continue;
+
+    // Match via normalized metro name → CBSA
+    const key  = metroKey(normalizeName(regionName));
+    const cbsa = key ? hudKeyToCbsa.get(key) : null;
+    if (!cbsa) continue;
+
+    const raw = row[lastCol.i];
+    if (!raw || raw === '') continue;
+    const val = parseFloat(String(raw).replace(/[,%$]/g, ''));
+    if (!Number.isNaN(val)) map.set(cbsa, val);
+  }
+
   return map;
 }
 
@@ -127,55 +161,67 @@ async function main() {
   });
 
   try {
-    console.log('Loading ZIP-CBSA crosswalk...');
-    const zipToCbsa = loadZipCbsa();
-    console.log(`  ${zipToCbsa.size} zips mapped to CBSAs`);
+    console.log('Loading reference data...');
+    const hudKeyToCbsa = loadHudMetroKeys();
+    const zipToCbsa    = loadZipCbsa();
+    console.log(`  HUD metro keys: ${hudKeyToCbsa.size}`);
+    console.log(`  ZIP-CBSA: ${zipToCbsa.size} zips`);
 
-    console.log('\nReading Zillow metro CSVs from local files...');
-    const domContent = readLocalCsv(LOCAL_FILES.dom,       'Days to Pending');
-    const invContent = readLocalCsv(LOCAL_FILES.inventory, 'For-Sale Inventory');
-    const cutContent = readLocalCsv(LOCAL_FILES.priceCut,  'Price Cuts');
+    // Build zip → value maps for each metric via CBSA
+    console.log('\nParsing metro CSVs...');
+    const metricMaps = {};
+    for (const { file, dbCol } of METRO_FILES) {
+      const filePath = path.join(DATA_DIR, file);
+      if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) {
+        console.log(`  ⚠️  Skipping ${file} (not found or empty)`);
+        continue;
+      }
+      const byCbsa = parseMetroCsv(filePath, hudKeyToCbsa);
+      // Build zip → value map
+      const byZip = new Map();
+      for (const [zip, cbsa] of zipToCbsa) {
+        const val = byCbsa.get(cbsa);
+        if (val != null) byZip.set(zip, val);
+      }
+      metricMaps[dbCol] = byZip;
+      console.log(`  ✓ ${file}: ${byCbsa.size} CBSA matches → ${byZip.size} zips`);
+    }
 
-    console.log('\nParsing CSVs...');
-    const domByCbsa = parseMetroCsv(domContent);
-    const invByCbsa = parseMetroCsv(invContent);
-    const cutByCbsa = parseMetroCsv(cutContent);
+    const availableCols = METRO_FILES.filter(m => metricMaps[m.dbCol]?.size > 0);
+    if (!availableCols.length) {
+      console.log('\n⚠️  No metrics matched any zips — check file formats');
+      return;
+    }
 
-    console.log(`  Days on market:  ${domByCbsa.size} metros`);
-    console.log(`  For-sale inv:    ${invByCbsa.size} metros`);
-    console.log(`  Price cut pct:   ${cutByCbsa.size} metros`);
-
-    // Pull all zips from DB
+    // Upsert
     const { rows: zipRows } = await pool.query('SELECT zip_code FROM zip_data');
-    console.log(`\nEnriching ${zipRows.length} zip codes...`);
+    console.log(`\nEnriching ${zipRows.length} zip codes with ${availableCols.length} metrics...`);
 
     let enriched = 0;
-    let domHits  = 0;
-
     for (let i = 0; i < zipRows.length; i += BATCH_SIZE) {
       const batch  = zipRows.slice(i, i + BATCH_SIZE);
       const client = await pool.connect();
       try {
         for (const { zip_code } of batch) {
           const zip  = String(zip_code).padStart(5, '0');
-          const cbsa = zipToCbsa.get(zip);
-          if (!cbsa) continue;
+          const sets   = [];
+          const params = [];
+          let   idx    = 1;
 
-          const dom = domByCbsa.get(cbsa) ?? null;
-          const inv = invByCbsa.get(cbsa) ?? null;
-          const cut = cutByCbsa.get(cbsa) ?? null;
+          for (const { dbCol, round } of availableCols) {
+            const val = metricMaps[dbCol]?.get(zip);
+            if (val == null) continue;
+            const stored = round ? Math.round(val) : parseFloat(val.toFixed(3));
+            sets.push(`${dbCol} = COALESCE($${idx}, ${dbCol})`);
+            params.push(stored);
+            idx++;
+          }
 
-          if (!dom && !inv && !cut) continue;
-          if (dom) domHits++;
-
+          if (!sets.length) continue;
+          params.push(zip_code);
           await client.query(
-            `UPDATE zip_data SET
-               days_on_market     = COALESCE($1, days_on_market),
-               for_sale_inventory = COALESCE($2, for_sale_inventory),
-               price_cut_pct      = COALESCE($3, price_cut_pct),
-               last_updated       = NOW()
-             WHERE zip_code = $4`,
-            [dom ? Math.round(dom) : null, inv ? Math.round(inv) : null, cut ? parseFloat(cut.toFixed(1)) : null, zip_code]
+            `UPDATE zip_data SET ${sets.join(', ')}, last_updated = NOW() WHERE zip_code = $${idx}`,
+            params
           );
           enriched++;
         }
@@ -185,22 +231,10 @@ async function main() {
       process.stdout.write(`\r  Progress: ${Math.min(i + BATCH_SIZE, zipRows.length)}/${zipRows.length}`);
     }
 
-    const check = await pool.query(`
-      SELECT
-        COUNT(*) FILTER (WHERE days_on_market IS NOT NULL)     AS dom_count,
-        COUNT(*) FILTER (WHERE for_sale_inventory IS NOT NULL) AS inv_count,
-        COUNT(*) FILTER (WHERE price_cut_pct IS NOT NULL)      AS cut_count,
-        ROUND(AVG(days_on_market))    AS avg_dom,
-        ROUND(AVG(price_cut_pct), 1)  AS avg_cut_pct
-      FROM zip_data
-    `);
-    const s = check.rows[0];
     console.log(`\n\nDone — ${enriched} zips updated`);
-    console.log(`  With days on market:   ${s.dom_count}`);
-    console.log(`  With inventory:        ${s.inv_count}`);
-    console.log(`  With price cut %:      ${s.cut_count}`);
-    console.log(`  Avg days on market:    ${s.avg_dom}`);
-    console.log(`  Avg price cut %:       ${s.avg_cut_pct}%`);
+    for (const { dbCol } of availableCols) {
+      console.log(`  ${dbCol}: ${metricMaps[dbCol].size} zips with data`);
+    }
 
   } finally {
     await pool.end();
