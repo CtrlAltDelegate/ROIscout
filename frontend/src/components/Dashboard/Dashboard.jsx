@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Map, Search, BarChart2, Bookmark, Calculator, Star,
-  TrendingUp, Building2, Target, Zap, Info, Compass,
+  TrendingUp, Target, Info, Compass,
 } from 'lucide-react';
 import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
