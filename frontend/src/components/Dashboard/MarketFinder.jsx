@@ -127,7 +127,38 @@ function StepBudget({ data, set }) {
   );
 }
 
+const ReservePctInput = ({ label, sub, value, onChange }) => (
+  <div className="bg-gray-900/60 border border-gray-700 rounded-xl px-4 py-3">
+    <div className="flex items-center justify-between mb-2">
+      <div>
+        <p className="text-sm font-medium text-gray-200">{label}</p>
+        {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
+      </div>
+      <div className="flex items-center gap-1.5 w-20">
+        <input
+          type="number"
+          value={value}
+          onChange={e => onChange(Math.max(0, Math.min(30, Number(e.target.value))))}
+          className="w-full bg-gray-800 border border-gray-600 rounded-lg px-2 py-1.5 text-white text-sm text-right focus:outline-none focus:border-emerald-500"
+          min="0" max="30" step="0.5"
+        />
+        <span className="text-gray-400 text-sm">%</span>
+      </div>
+    </div>
+    {/* Visual bar */}
+    <div className="h-1 bg-gray-700 rounded-full">
+      <div
+        className="h-1 bg-emerald-500 rounded-full transition-all"
+        style={{ width: `${Math.min((value / 15) * 100, 100)}%` }}
+      />
+    </div>
+  </div>
+);
+
 function StepProperty({ data, set }) {
+  const effectiveMgmtPct = data.useManager ? Number(data.managementPct) : 0;
+  const totalReserves = Number(data.maintenancePct) + Number(data.capexPct) + Number(data.vacancyPct) + effectiveMgmtPct;
+
   return (
     <div className="space-y-5">
       <div>
@@ -138,6 +169,7 @@ function StepProperty({ data, set }) {
           ))}
         </div>
       </div>
+
       <div>
         <FieldLabel>Bathrooms</FieldLabel>
         <div className="flex gap-2">
@@ -146,11 +178,70 @@ function StepProperty({ data, set }) {
           ))}
         </div>
       </div>
+
+      {/* Property Management */}
       <div>
         <FieldLabel>Property Management</FieldLabel>
+        <div className="grid grid-cols-2 gap-2">
+          <ChoiceButton
+            label="Self-managed"
+            sub="No management fee"
+            active={!data.useManager}
+            onClick={() => set('useManager', false)}
+          />
+          <ChoiceButton
+            label="Property manager"
+            sub="Enter their fee below"
+            active={data.useManager}
+            onClick={() => set('useManager', true)}
+          />
+        </div>
+        {data.useManager && (
+          <div className="mt-2">
+            <ReservePctInput
+              label="Management Fee"
+              sub="% of monthly rent charged by your property manager"
+              value={data.managementPct}
+              onChange={v => set('managementPct', v)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Operating Reserves */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <FieldLabel>Operating Reserves <span className="text-gray-500 font-normal text-xs">(% of monthly rent set aside)</span></FieldLabel>
+        </div>
         <div className="space-y-2">
-          <ChoiceButton label="Self-managed" sub="No management fee" active={data.managementPct === 0} onClick={() => set('managementPct', 0)} />
-          <ChoiceButton label="Property manager" sub="Adds ~8% of rent as a monthly cost" active={data.managementPct === 8} onClick={() => set('managementPct', 8)} />
+          <ReservePctInput
+            label="Repairs & Maintenance"
+            sub="Ongoing upkeep: appliances, plumbing, paint, etc."
+            value={data.maintenancePct}
+            onChange={v => set('maintenancePct', v)}
+          />
+          <ReservePctInput
+            label="Capital Expenditures"
+            sub="Big-ticket items: roof, HVAC, water heater, flooring"
+            value={data.capexPct}
+            onChange={v => set('capexPct', v)}
+          />
+          <ReservePctInput
+            label="Vacancy"
+            sub="Income lost while the unit is between tenants"
+            value={data.vacancyPct}
+            onChange={v => set('vacancyPct', v)}
+          />
+        </div>
+
+        {/* Total reserves summary */}
+        <div className={`mt-3 flex items-center justify-between px-3 py-2 rounded-lg border ${
+          totalReserves > 30 ? 'border-red-700 bg-red-900/10' : 'border-gray-700 bg-gray-900/40'
+        }`}>
+          <span className="text-xs text-gray-400">Total monthly reserves</span>
+          <span className={`text-sm font-semibold ${totalReserves > 30 ? 'text-red-400' : totalReserves > 20 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+            {totalReserves.toFixed(1)}% of rent
+          </span>
         </div>
       </div>
     </div>
@@ -315,7 +406,11 @@ const DEFAULT_ANSWERS = {
   // Step 2
   beds:           3,
   baths:          2,
-  managementPct:  0,
+  useManager:     false,
+  managementPct:  8,
+  maintenancePct: 5,
+  capexPct:       5,
+  vacancyPct:     5,
   // Step 3
   geography:      'any',
   selectedStates: [],
@@ -368,7 +463,10 @@ const MarketFinder = ({ user }) => {
         loanTerm:      answers.loanTerm,
         beds:          answers.beds,
         baths:         answers.baths,
-        managementPct: answers.managementPct,
+        managementPct: answers.useManager ? answers.managementPct : 0,
+        maintenancePct: answers.maintenancePct,
+        capexPct:      answers.capexPct,
+        vacancyPct:    answers.vacancyPct,
         states:        getStates(),
         minCoc:        answers.minCoc,
         priority:      answers.priority,
@@ -393,16 +491,16 @@ const MarketFinder = ({ user }) => {
 
   // cashFlowParams object to pass to ROITable so CF breakdown shows in expanded rows
   const cfParams = results ? {
-    downBudget:    answers.downBudget,
-    downPct:       answers.downPct,
-    interestRate:  answers.interestRate,
-    loanTermYears: answers.loanTerm,
-    insuranceRate: 0.5,
+    downBudget:      answers.downBudget,
+    downPct:         answers.downPct,
+    interestRate:    answers.interestRate,
+    loanTermYears:   answers.loanTerm,
+    insuranceRate:   0.5,
     taxRateOverride: null,
-    maintenancePct:  5,
-    vacancyPct:      5,
-    capexPct:        5,
-    managementPct:   answers.managementPct,
+    maintenancePct:  answers.maintenancePct,
+    vacancyPct:      answers.vacancyPct,
+    capexPct:        answers.capexPct,
+    managementPct:   answers.useManager ? answers.managementPct : 0,
     beds:            answers.beds,
     baths:           answers.baths,
   } : null;

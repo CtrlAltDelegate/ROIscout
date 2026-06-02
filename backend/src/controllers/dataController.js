@@ -446,6 +446,9 @@ const dataController = {
       const beds          = Math.min(Math.max(Number(req.query.beds) || 3, 1), 5);
       const baths         = Number(req.query.baths)         || 2;
       const managementPct = Number(req.query.managementPct) || 0;
+      const maintenancePct = Number(req.query.maintenancePct) ?? 5;
+      const capexPct      = Number(req.query.capexPct)      ?? 5;
+      const vacancyPct    = Number(req.query.vacancyPct)    ?? 5;
       const minCoc        = Number(req.query.minCoc)        || 5;
       const priority      = req.query.priority              || 'cashflow'; // cashflow|growth|entry
       const marketType    = req.query.marketType            || 'any';      // any|stable|hot|affordable
@@ -544,10 +547,10 @@ const dataController = {
         const monthlyIns  = price * (0.5 / 100) / 12;
         const piti        = pi + monthlyTax + monthlyIns;
 
-        // Reserves (fixed 5% each for vacancy/maint/capex + user management)
-        const vacancy    = rent * 0.05;
-        const maint      = rent * 0.05;
-        const capex      = rent * 0.05;
+        // Reserves (user-specified percentages)
+        const vacancy    = rent * (vacancyPct    / 100);
+        const maint      = rent * (maintenancePct / 100);
+        const capex      = rent * (capexPct      / 100);
         const mgmt       = rent * (managementPct / 100);
         const effectRent = rent - vacancy;
         const expenses   = piti + maint + capex + mgmt;
@@ -595,7 +598,7 @@ const dataController = {
         data:        top,
         total:       results.length,
         maxPrice:    Math.round(maxPrice),
-        params:      { downBudget, downPct, interestRate, loanTerm, beds, baths, managementPct, minCoc, priority, marketType },
+        params:      { downBudget, downPct, interestRate, loanTerm, beds, baths, managementPct, maintenancePct, capexPct, vacancyPct, minCoc, priority, marketType },
       });
 
     } catch (err) {
