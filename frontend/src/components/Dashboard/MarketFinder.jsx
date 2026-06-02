@@ -308,7 +308,7 @@ function StepGoals({ data, set }) {
   return (
     <div className="space-y-5">
       <div>
-        <FieldLabel>Minimum Cash-on-Cash Return" sub="(annual cash flow ÷ down payment)" />
+        <FieldLabel sub="(annual cash flow ÷ down payment)">Minimum Cash-on-Cash Return</FieldLabel>
         <div className="flex gap-2">
           {[5, 8, 10, 12, 15].map(n => (
             <button key={n} onClick={() => set('minCoc', n)}
