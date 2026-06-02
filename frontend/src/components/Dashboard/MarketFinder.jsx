@@ -156,8 +156,6 @@ const ReservePctInput = ({ label, sub, value, onChange }) => (
 );
 
 function StepProperty({ data, set }) {
-  const effectiveMgmtPct = data.useManager ? Number(data.managementPct) : 0;
-  const totalReserves = Number(data.maintenancePct) + Number(data.capexPct) + Number(data.vacancyPct) + effectiveMgmtPct;
 
   return (
     <div className="space-y-5">
@@ -234,15 +232,6 @@ function StepProperty({ data, set }) {
           />
         </div>
 
-        {/* Total reserves summary */}
-        <div className={`mt-3 flex items-center justify-between px-3 py-2 rounded-lg border ${
-          totalReserves > 30 ? 'border-red-700 bg-red-900/10' : 'border-gray-700 bg-gray-900/40'
-        }`}>
-          <span className="text-xs text-gray-400">Total monthly reserves</span>
-          <span className={`text-sm font-semibold ${totalReserves > 30 ? 'text-red-400' : totalReserves > 20 ? 'text-yellow-400' : 'text-emerald-400'}`}>
-            {totalReserves.toFixed(1)}% of rent
-          </span>
-        </div>
       </div>
     </div>
   );

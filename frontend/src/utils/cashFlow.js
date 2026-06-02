@@ -106,21 +106,28 @@ export function calcCashFlow(row, params) {
   const monthlyIns  = price * (insuranceRate / 100) / 12;
   const piti        = pi + monthlyTax + monthlyIns;
 
-  // Operating reserves (as % of adjusted rent)
-  const vacancyCost   = rent * (vacancyPct   / 100);
+  // Cash flow waterfall — in order of deduction:
+  //   Rent
+  //   − Property Management  → netAfterMgmt
+  //   − Maintenance          → netAfterMaint
+  //   − CapEx                → netAfterCapex
+  //   − Vacancy              → netAfterVacancy (available for debt service)
+  //   − PITI                 → monthlyCashFlow (Profit)
+  const management    = rent * (managementPct  / 100);
   const maintenance   = rent * (maintenancePct / 100);
-  const capex         = rent * (capexPct      / 100);
-  const management    = rent * (managementPct / 100);
-  const totalReserves = vacancyCost + maintenance + capex + management;
+  const capex         = rent * (capexPct       / 100);
+  const vacancyCost   = rent * (vacancyPct     / 100);
 
-  // Net cash flow
-  const effectiveRent        = rent - vacancyCost;
-  const totalMonthlyExpenses = piti + maintenance + capex + management;
-  const monthlyCashFlow      = effectiveRent - totalMonthlyExpenses;
-  const annualCashFlow       = monthlyCashFlow * 12;
+  const netAfterMgmt    = rent       - management;
+  const netAfterMaint   = netAfterMgmt  - maintenance;
+  const netAfterCapex   = netAfterMaint - capex;
+  const netAfterVacancy = netAfterCapex - vacancyCost; // available for debt service
 
-  // Returns
-  const cashOnCash       = downAmount > 0 ? (annualCashFlow / downAmount) * 100 : 0;
+  const monthlyCashFlow = netAfterVacancy - piti;
+  const annualCashFlow  = monthlyCashFlow * 12;
+
+  // CoC = (annual profit / down payment) × 100
+  const cashOnCash        = downAmount > 0 ? (annualCashFlow / downAmount) * 100 : 0;
   const maxAffordablePrice = downAmount > 0 ? downAmount / (downPct / 100) : 0;
 
   return {
@@ -136,12 +143,14 @@ export function calcCashFlow(row, params) {
     monthlyTax,
     monthlyIns,
     piti,
-    vacancyCost,
+    management,
     maintenance,
     capex,
-    management,
-    totalReserves,
-    effectiveRent,
+    vacancyCost,
+    netAfterMgmt,
+    netAfterMaint,
+    netAfterCapex,
+    netAfterVacancy,
     monthlyCashFlow,
     annualCashFlow,
     cashOnCash,

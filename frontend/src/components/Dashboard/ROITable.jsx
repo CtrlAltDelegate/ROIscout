@@ -276,41 +276,67 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                       <td colSpan={7} className="px-6 py-5">
                         <div className="space-y-4">
 
-                          {/* CF breakdown (CF mode only) */}
+                          {/* CF breakdown (CF mode only) — waterfall order */}
                           {cfMode && cf && (
                             <div>
-                              <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider mb-2">Cash Flow Breakdown</p>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                                <div>
-                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Monthly Rent</p>
-                                  {cf.rentMultiplier !== 1.0 && (
-                                    <p className="text-gray-500 text-xs">Base: ${cf.baseRent?.toLocaleString()} × {cf.rentMultiplier.toFixed(2)}x</p>
-                                  )}
-                                  <p className="text-white font-medium">${cf.rent.toLocaleString()} est. rent</p>
-                                  <p className="text-gray-400 text-xs">−${Math.round(cf.vacancyCost)} vacancy</p>
-                                  <p className="text-emerald-400 text-xs font-medium">= ${Math.round(cf.effectiveRent ?? (cf.rent - cf.vacancyCost)).toLocaleString()} effective</p>
+                              <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider mb-3">Cash Flow Waterfall</p>
+                              <div className="space-y-1.5 text-sm max-w-sm">
+                                {/* Gross Rent */}
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-300 font-medium">
+                                    Gross Rent
+                                    {cf.rentMultiplier !== 1.0 && (
+                                      <span className="text-gray-500 text-xs ml-1">(base ${cf.baseRent?.toLocaleString()} × {cf.rentMultiplier.toFixed(2)}x)</span>
+                                    )}
+                                  </span>
+                                  <span className="text-white font-semibold">${cf.rent.toLocaleString()}</span>
                                 </div>
-                                <div>
-                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">PITI</p>
-                                  <p className="text-white font-medium">${Math.round(cf.piti).toLocaleString()}/mo</p>
-                                  <p className="text-gray-400 text-xs">P&amp;I ${Math.round(cf.pi).toLocaleString()}</p>
-                                  <p className="text-gray-400 text-xs">Tax ${Math.round(cf.monthlyTax).toLocaleString()} · Ins ${Math.round(cf.monthlyIns).toLocaleString()}</p>
-                                  <p className="text-gray-500 text-xs">Rate: {cf.taxRateUsed.toFixed(2)}%</p>
+                                {/* Property Management */}
+                                {cf.management > 0 && (
+                                  <div className="flex justify-between items-center text-gray-400">
+                                    <span className="pl-3">− Property Management</span>
+                                    <span>−${Math.round(cf.management).toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {/* Maintenance */}
+                                <div className="flex justify-between items-center text-gray-400">
+                                  <span className="pl-3">− Repairs &amp; Maintenance</span>
+                                  <span>−${Math.round(cf.maintenance).toLocaleString()}</span>
                                 </div>
-                                <div>
-                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Reserves</p>
-                                  <p className="text-gray-400 text-xs">Maint. ${Math.round(cf.maintenance)}</p>
-                                  <p className="text-gray-400 text-xs">CapEx ${Math.round(cf.capex)}</p>
-                                  {cf.management > 0 && <p className="text-gray-400 text-xs">Mgmt. ${Math.round(cf.management)}</p>}
-                                  <p className="text-white text-xs font-medium">Total ${Math.round(cf.totalReserves)}/mo</p>
+                                {/* CapEx */}
+                                <div className="flex justify-between items-center text-gray-400">
+                                  <span className="pl-3">− Capital Expenditures</span>
+                                  <span>−${Math.round(cf.capex).toLocaleString()}</span>
                                 </div>
-                                <div>
-                                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Returns</p>
-                                  <p className={`font-bold text-lg ${cfColor(cf.monthlyCashFlow)}`}>
-                                    {cf.monthlyCashFlow >= 0 ? '+' : ''}${Math.round(cf.monthlyCashFlow).toLocaleString()}/mo
-                                  </p>
-                                  <p className={`text-sm font-semibold ${cocColor(cf.cashOnCash)}`}>{cf.cashOnCash.toFixed(1)}% CoC</p>
-                                  <p className="text-gray-400 text-xs">Down: ${Math.round(cf.downAmount).toLocaleString()}</p>
+                                {/* Vacancy */}
+                                <div className="flex justify-between items-center text-gray-400">
+                                  <span className="pl-3">− Vacancy</span>
+                                  <span>−${Math.round(cf.vacancyCost).toLocaleString()}</span>
+                                </div>
+                                {/* Available for debt service */}
+                                <div className="flex justify-between items-center border-t border-gray-700 pt-1.5 mt-1">
+                                  <span className="text-gray-300 text-xs">Available for debt service</span>
+                                  <span className="text-gray-200 font-medium">${Math.round(cf.netAfterVacancy ?? (cf.rent - cf.management - cf.maintenance - cf.capex - cf.vacancyCost)).toLocaleString()}</span>
+                                </div>
+                                {/* PITI */}
+                                <div className="flex justify-between items-center text-gray-400">
+                                  <span className="pl-3">
+                                    − PITI
+                                    <span className="text-gray-600 text-xs ml-1">(P&amp;I ${Math.round(cf.pi).toLocaleString()} · Tax ${Math.round(cf.monthlyTax).toLocaleString()} · Ins ${Math.round(cf.monthlyIns).toLocaleString()})</span>
+                                  </span>
+                                  <span>−${Math.round(cf.piti).toLocaleString()}</span>
+                                </div>
+                                {/* Net Cash Flow */}
+                                <div className={`flex justify-between items-center border-t border-gray-600 pt-2 mt-1`}>
+                                  <span className="font-semibold text-gray-200">Monthly Profit</span>
+                                  <span className={`font-bold text-lg ${cfColor(cf.monthlyCashFlow)}`}>
+                                    {cf.monthlyCashFlow >= 0 ? '+' : ''}${Math.round(cf.monthlyCashFlow).toLocaleString()}
+                                  </span>
+                                </div>
+                                {/* CoC */}
+                                <div className="flex justify-between items-center text-xs text-gray-500">
+                                  <span>Annual profit / ${Math.round(cf.downAmount).toLocaleString()} down</span>
+                                  <span className={`font-bold text-base ${cocColor(cf.cashOnCash)}`}>{cf.cashOnCash.toFixed(1)}% CoC</span>
                                 </div>
                               </div>
                             </div>
