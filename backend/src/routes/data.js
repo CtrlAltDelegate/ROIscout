@@ -56,6 +56,16 @@ router.get('/analytics',
   dataController.getAnalytics
 );
 
+// GET /api/data/find-markets - Investor wizard: find top matching markets
+router.get('/find-markets',
+  optionalAuth,
+  cacheService.middleware(
+    (req) => `find-markets:${JSON.stringify(req.query)}`,
+    5 * 60
+  ),
+  dataController.findMarkets
+);
+
 // POST /api/data/zip/view - Record a free-tier zip detail view (auth required)
 router.post('/zip/view', authenticateToken, dataController.recordZipView);
 

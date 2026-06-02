@@ -433,4 +433,177 @@ const dataController = {
   },
 };
 
+  /**
+   * Find top matching markets based on investor wizard parameters.
+   * Computes cash flow server-side and returns ranked results.
+   */
+  async findMarkets(req, res) {
+    try {
+      const downBudget    = Number(req.query.downBudget)    || 50000;
+      const downPct       = Number(req.query.downPct)       || 20;
+      const interestRate  = Number(req.query.interestRate)  || 7.25;
+      const loanTerm      = Number(req.query.loanTerm)      || 30;
+      const beds          = Math.min(Math.max(Number(req.query.beds) || 3, 1), 5);
+      const baths         = Number(req.query.baths)         || 2;
+      const managementPct = Number(req.query.managementPct) || 0;
+      const minCoc        = Number(req.query.minCoc)        || 5;
+      const priority      = req.query.priority              || 'cashflow'; // cashflow|growth|entry
+      const marketType    = req.query.marketType            || 'any';      // any|stable|hot|affordable
+      const statesParam   = req.query.states                || '';
+      const limit         = Math.min(Number(req.query.limit) || 25, 50);
+
+      const maxPrice = downPct > 0 ? downBudget / (downPct / 100) : 0;
+      if (maxPrice <= 0) return res.status(400).json({ error: 'Invalid down payment parameters' });
+
+      // State tax rates (Tax Foundation 2024)
+      const STATE_TAX = {
+        AL:0.41,AK:1.04,AZ:0.62,AR:0.62,CA:0.73,CO:0.55,CT:1.79,DE:0.57,FL:0.89,
+        GA:0.87,HI:0.32,ID:0.69,IL:2.23,IN:0.83,IA:1.50,KS:1.39,KY:0.86,LA:0.56,
+        ME:1.36,MD:1.09,MA:1.23,MI:1.54,MN:1.11,MS:0.75,MO:0.97,MT:0.84,NE:1.67,
+        NV:0.59,NH:2.09,NJ:2.49,NM:0.80,NY:1.73,NC:0.80,ND:0.98,OH:1.59,OK:0.90,
+        OR:0.91,PA:1.58,RI:1.53,SC:0.57,SD:1.22,TN:0.71,TX:1.74,UT:0.63,VT:1.83,
+        VA:0.87,WA:0.93,WV:0.59,WI:1.85,WY:0.58,
+      };
+
+      const BR_MULT = { 1:0.75, 2:1.00, 3:1.18, 4:1.38, 5:1.55 };
+
+      function monthlyPI(principal, rate, term) {
+        if (principal <= 0 || rate <= 0) return 0;
+        const r = rate / 100 / 12;
+        const n = term * 12;
+        return principal * (r * Math.pow(1+r,n)) / (Math.pow(1+r,n) - 1);
+      }
+
+      // Build WHERE clause
+      const conditions = ['median_price > 0', 'median_rent > 0'];
+      const params     = [];
+      let   pIdx       = 1;
+
+      // Price filter using bedroom-specific price when available
+      const priceExpr = beds <= 4
+        ? `COALESCE(price_${beds}br, price_sfr, median_price)`
+        : `COALESCE(price_sfr, median_price)`;
+      conditions.push(`${priceExpr} <= $${pIdx++}`);
+      params.push(maxPrice);
+
+      // State filter
+      const selectedStates = statesParam ? statesParam.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) : [];
+      if (selectedStates.length > 0) {
+        conditions.push(`state = ANY($${pIdx++})`);
+        params.push(selectedStates);
+      }
+
+      // Market type pre-filter
+      if (marketType === 'hot')        conditions.push('(market_heat_index > 55 OR days_on_market < 15)');
+      if (marketType === 'stable')     conditions.push('(days_on_market > 20 OR days_on_market IS NULL)');
+      if (marketType === 'affordable') conditions.push(`${priceExpr} < 150000`);
+
+      const sql = `
+        SELECT
+          zip_code, state, county,
+          median_price, median_rent, rent_sfr,
+          hud_fmr_1br, hud_fmr_2br, hud_fmr_3br, hud_fmr_4br,
+          price_sfr, price_1br, price_2br, price_3br, price_4br, price_5br,
+          gross_rental_yield, rent_to_price_ratio,
+          rent_growth_1yr, rent_growth_3yr, price_growth_1yr, price_growth_5yr,
+          days_on_market, for_sale_inventory, price_cut_pct, market_heat_index,
+          renter_affordability, sale_to_list_ratio, new_listings_count, median_list_price,
+          median_household_income, population, rent_to_income_ratio
+        FROM zip_data
+        WHERE ${conditions.join(' AND ')}
+        LIMIT 2000
+      `;
+
+      const { rows } = await query(sql, params);
+
+      // Compute cash flow for each row and score it
+      const results = [];
+
+      for (const row of rows) {
+        const bedroomPrice = beds <= 4
+          ? Number(row[`price_${beds}br`] || 0)
+          : Number(row.price_5br || 0);
+        const price = bedroomPrice || Number(row.price_sfr || row.median_price);
+        if (!price || price > maxPrice) continue;
+
+        const baseRent = Number(row.rent_sfr || row.median_rent);
+        if (!baseRent) continue;
+
+        // Bedroom rent multiplier
+        const fmr2 = Number(row.hud_fmr_2br);
+        const fmrN = Number(row[`hud_fmr_${beds}br`]);
+        const multiplier = (fmr2 && fmrN) ? fmrN / fmr2 : (BR_MULT[beds] ?? 1.0);
+        const rent = Math.round(baseRent * multiplier);
+
+        // PITI
+        const down        = price * (downPct / 100);
+        const loan        = price - down;
+        const pi          = monthlyPI(loan, interestRate, loanTerm);
+        const taxRate     = STATE_TAX[row.state] ?? 1.0;
+        const monthlyTax  = price * (taxRate / 100) / 12;
+        const monthlyIns  = price * (0.5 / 100) / 12;
+        const piti        = pi + monthlyTax + monthlyIns;
+
+        // Reserves (fixed 5% each for vacancy/maint/capex + user management)
+        const vacancy    = rent * 0.05;
+        const maint      = rent * 0.05;
+        const capex      = rent * 0.05;
+        const mgmt       = rent * (managementPct / 100);
+        const effectRent = rent - vacancy;
+        const expenses   = piti + maint + capex + mgmt;
+        const monthlyCF  = effectRent - expenses;
+        const annualCF   = monthlyCF * 12;
+        const coc        = down > 0 ? (annualCF / down) * 100 : 0;
+
+        if (coc < minCoc) continue;
+
+        // Composite match score
+        const normalizedCoc    = Math.min(coc / 20, 1);          // 20% = max
+        const rentGrowth       = Number(row.rent_growth_1yr || 0);
+        const priceGrowth      = Number(row.price_growth_1yr || 0);
+        const normalizedGrowth = Math.min((rentGrowth + priceGrowth) / 10, 1);
+        const entryScore       = Math.max(0, 1 - (price / maxPrice));
+
+        let matchScore;
+        if (priority === 'growth') {
+          matchScore = normalizedCoc * 0.4 + normalizedGrowth * 0.4 + entryScore * 0.2;
+        } else if (priority === 'entry') {
+          matchScore = normalizedCoc * 0.4 + entryScore * 0.6;
+        } else {
+          matchScore = normalizedCoc * 0.8 + normalizedGrowth * 0.1 + entryScore * 0.1;
+        }
+
+        results.push({
+          ...row,
+          _computed: {
+            price, rent, down, loan, pi, piti,
+            monthlyCF: Math.round(monthlyCF),
+            annualCF:  Math.round(annualCF),
+            coc:       parseFloat(coc.toFixed(2)),
+            matchScore: parseFloat(matchScore.toFixed(4)),
+            multiplier: parseFloat(multiplier.toFixed(3)),
+            beds, baths,
+          },
+        });
+      }
+
+      // Sort by match score descending, take top N
+      results.sort((a, b) => b._computed.matchScore - a._computed.matchScore);
+      const top = results.slice(0, limit);
+
+      res.json({
+        data:        top,
+        total:       results.length,
+        maxPrice:    Math.round(maxPrice),
+        params:      { downBudget, downPct, interestRate, loanTerm, beds, baths, managementPct, minCoc, priority, marketType },
+      });
+
+    } catch (err) {
+      console.error('findMarkets error:', err);
+      res.status(500).json({ error: 'Failed to find markets' });
+    }
+  },
+
+};
+
 module.exports = dataController;

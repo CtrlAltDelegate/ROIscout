@@ -5,21 +5,23 @@ import {
 } from 'recharts';
 import {
   Map, Search, BarChart2, Bookmark, Calculator, Star,
-  TrendingUp, Building2, Target, Zap, Info,
+  TrendingUp, Building2, Target, Zap, Info, Compass,
 } from 'lucide-react';
 import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
 import CashFlowView from './CashFlowView';
+import MarketFinder from './MarketFinder';
 import { apiService } from '../../services/api';
 
-const VALID_TABS = ['map', 'list', 'cashflow', 'analytics', 'saved'];
+const VALID_TABS = ['map', 'list', 'cashflow', 'finder', 'analytics', 'saved'];
 
 const NAV_ITEMS = [
-  { id: 'map',       label: 'ROI Heat Map',  Icon: Map        },
-  { id: 'list',      label: 'Search & List', Icon: Search     },
-  { id: 'cashflow',  label: 'Cash Flow',     Icon: Calculator },
-  { id: 'analytics', label: 'Analytics',     Icon: BarChart2  },
-  { id: 'saved',     label: 'Saved',         Icon: Bookmark   },
+  { id: 'map',       label: 'ROI Heat Map',    Icon: Map        },
+  { id: 'list',      label: 'Search & List',   Icon: Search     },
+  { id: 'cashflow',  label: 'Cash Flow',       Icon: Calculator },
+  { id: 'finder',   label: 'Find My Market',  Icon: Compass    },
+  { id: 'analytics', label: 'Analytics',       Icon: BarChart2  },
+  { id: 'saved',     label: 'Saved',           Icon: Bookmark   },
 ];
 
 const ROIscoutDashboard = ({ user }) => {
@@ -133,6 +135,9 @@ const ROIscoutDashboard = ({ user }) => {
 
       case 'cashflow':
         return <CashFlowView user={user} />;
+
+      case 'finder':
+        return <MarketFinder user={user} />;
 
       case 'analytics': {
         return (

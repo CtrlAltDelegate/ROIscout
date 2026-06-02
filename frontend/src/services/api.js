@@ -49,6 +49,13 @@ export const apiService = {
     return response.data;
   },
 
+  async findMarkets(params) {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v != null && v !== '') qs.append(k, v); });
+    const response = await apiClient.get(`/data/find-markets?${qs}`);
+    return response.data;
+  },
+
   async getStates() {
     const response = await apiClient.get('/data/states');
     return response.data;
