@@ -80,9 +80,10 @@ export function calcCashFlow(row, params) {
   const price = bedroomPrice || Number(row.price_sfr || row.median_price);
   if (!price) return null;
 
-  // Rent: use SFR ZORI (single-family specific) — investors are buying houses,
-  // not apartments. Fall back to all-homes ZORI if SFR data is absent.
-  const rent = Number(row.rent_sfr || row.median_rent);
+  // Rent: use zip-level All Homes ZORI (median_rent) — more granular than
+  // SFR ZORI which is metro-level and blends cheap markets with expensive
+  // neighbors (e.g. Gary IN gets Chicago metro SFR rate).
+  const rent = Number(row.median_rent || row.rent_sfr);
   if (!rent) return null;
 
   // Financing

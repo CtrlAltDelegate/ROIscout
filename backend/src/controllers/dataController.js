@@ -528,8 +528,10 @@ const dataController = {
         const price = bedroomPrice || Number(row.price_sfr || row.median_price);
         if (!price || price > maxPrice) continue;
 
-        // Rent: use SFR ZORI — investors are buying houses, not apartments.
-        const rent = Number(row.rent_sfr || row.median_rent);
+        // Rent: use zip-level All Homes ZORI (median_rent) — more granular than
+        // SFR ZORI which is metro-level and blends cheap markets with expensive
+        // neighbors (e.g. Gary IN gets Chicago metro SFR rate).
+        const rent = Number(row.median_rent || row.rent_sfr);
         if (!rent) continue;
 
         // PITI
