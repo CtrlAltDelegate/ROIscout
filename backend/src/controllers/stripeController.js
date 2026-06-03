@@ -1,4 +1,6 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
 const { query } = require('../config/database');
 
 const BASIC_PRICE_ID = process.env.STRIPE_BASIC_PRICE_ID;
