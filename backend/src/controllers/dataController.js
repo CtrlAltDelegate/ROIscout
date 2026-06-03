@@ -528,14 +528,13 @@ const dataController = {
         const price = bedroomPrice || Number(row.price_sfr || row.median_price);
         if (!price || price > maxPrice) continue;
 
-        const baseRent = Number(row.median_rent || row.rent_sfr);
-        if (!baseRent) continue;
-
-        // Bedroom rent multiplier
-        const fmr2 = Number(row.hud_fmr_2br);
+        // Use HUD FMR for the specific bedroom count when available —
+        // county-level and bedroom-specific, most grounded rent estimate.
+        // Fall back to median_rent (no multiplier) when HUD data is absent.
         const fmrN = Number(row[`hud_fmr_${beds}br`]);
-        const multiplier = (fmr2 && fmrN) ? fmrN / fmr2 : (BR_MULT[beds] ?? 1.0);
-        const rent = Math.round(baseRent * multiplier);
+        const baseRent = Number(row.median_rent || row.rent_sfr);
+        if (!fmrN && !baseRent) continue;
+        const rent = fmrN || baseRent;
 
         // PITI
         const down        = price * (downPct / 100);
