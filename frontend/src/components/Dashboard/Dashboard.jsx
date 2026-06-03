@@ -11,6 +11,7 @@ import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
 import CashFlowView from './CashFlowView';
 import MarketFinder from './MarketFinder';
+import SavedSearches from './SavedSearches';
 import { apiService } from '../../services/api';
 
 const VALID_TABS = ['map', 'list', 'cashflow', 'finder', 'analytics', 'saved'];
@@ -36,6 +37,8 @@ const ROIscoutDashboard = ({ user }) => {
   const [zipViewCount, setZipViewCount]       = useState(0);
   const [analytics, setAnalytics]             = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [savedSearches, setSavedSearches]     = useState([]);
+  const [savedLoading, setSavedLoading]       = useState(false);
 
   const userPlan  = user?.subscription_plan || user?.plan || 'free';
   const isAdmin   = !!user?.is_admin;
@@ -60,6 +63,33 @@ const ROIscoutDashboard = ({ user }) => {
       .catch(() => setAnalytics(null))
       .finally(() => setAnalyticsLoading(false));
   }, [activeTab, analytics, analyticsLoading]);
+
+  useEffect(() => {
+    if (activeTab !== 'saved' || savedLoading) return;
+    setSavedLoading(true);
+    apiService.getSavedSearches()
+      .then(data => setSavedSearches(data))
+      .catch(() => setSavedSearches([]))
+      .finally(() => setSavedLoading(false));
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDeleteSavedSearch = useCallback(async (id) => {
+    await apiService.deleteSavedSearch(id);
+    setSavedSearches(prev => prev.filter(s => s.id !== id));
+  }, []);
+
+  const handleLoadSavedSearch = useCallback((filters) => {
+    // Switch to list tab — ROITableView reads filters from URL params
+    const params = new URLSearchParams();
+    params.set('tab', 'list');
+    if (filters.state)        params.set('state', filters.state);
+    if (filters.county)       params.set('county', filters.county);
+    if (filters.zipCode)      params.set('zipCode', filters.zipCode);
+    if (filters.minPrice)     params.set('minPrice', filters.minPrice);
+    if (filters.maxPrice)     params.set('maxPrice', filters.maxPrice);
+    if (filters.minRent)      params.set('minRent', filters.minRent);
+    window.location.search = params.toString();
+  }, []);
 
   const handleZipViewed = useCallback(() => {
     setZipViewCount(prev => {
@@ -90,11 +120,21 @@ const ROIscoutDashboard = ({ user }) => {
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start justify-between">
                 <div>
                   <p className="font-semibold text-green-800 text-sm">Welcome to ROIScout</p>
-                  <p className="text-xs text-green-600 mt-0.5 leading-relaxed">
-                    Pick a state to see which zip codes hit the 1% rule — or jump to <strong>Cash Flow</strong> to rank markets by your personal return targets.
+                  <p className="text-xs text-green-600 mt-1 leading-relaxed">
+                    This map shows gross yield by zip code — great for a quick scan. For deeper analysis, try these two:
                   </p>
+                  <div className="flex gap-3 mt-2">
+                    <button onClick={() => { setIsFirstVisit(false); setActiveTab('cashflow'); }}
+                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">
+                      Cash Flow →
+                    </button>
+                    <button onClick={() => { setIsFirstVisit(false); setActiveTab('finder'); }}
+                      className="text-xs bg-white hover:bg-green-50 text-green-700 border border-green-300 px-3 py-1.5 rounded-lg font-medium transition-colors">
+                      Find My Market →
+                    </button>
+                  </div>
                 </div>
-                <button onClick={() => setIsFirstVisit(false)} className="text-green-400 hover:text-green-600 ml-4 flex-shrink-0">✕</button>
+                <button onClick={() => setIsFirstVisit(false)} className="text-green-400 hover:text-green-600 ml-4 flex-shrink-0 text-lg leading-none">✕</button>
               </div>
             )}
             {isFree && (
@@ -196,15 +236,16 @@ const ROIscoutDashboard = ({ user }) => {
       }
 
       case 'saved':
-        return (
-          <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
-            <Bookmark className="w-10 h-10 text-slate-300 mb-3 mx-auto" />
-            <p className="text-slate-700 font-medium text-sm">No saved searches yet</p>
-            <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto leading-relaxed">
-              Use the <strong>Search &amp; List</strong> tab to filter by state, price, and rent —
-              then click <strong>Save Search</strong> to bookmark it here.
-            </p>
+        return savedLoading ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent" />
           </div>
+        ) : (
+          <SavedSearches
+            searches={savedSearches}
+            onLoadSearch={handleLoadSavedSearch}
+            onDeleteSearch={handleDeleteSavedSearch}
+          />
         );
 
       default:
