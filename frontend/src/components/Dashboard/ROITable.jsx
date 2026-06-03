@@ -194,9 +194,6 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                   <th className={`${thCls} text-right`} onClick={() => handleSort('cashOnCash')}>
                     CoC Return {getSortIcon('cashOnCash')}
                   </th>
-                  <th className={`${thCls} text-right`} onClick={() => handleSort('gross_rental_yield')}>
-                    Gross Yield {getSortIcon('gross_rental_yield')}
-                  </th>
                 </>
               ) : (
                 <>
@@ -251,9 +248,6 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                         <td className={`px-4 py-3 text-right font-bold text-base ${cocColor(cf?.cashOnCash ?? 0)}`}>
                           {cf ? `${cf.cashOnCash.toFixed(1)}%` : '—'}
                         </td>
-                        <td className={`px-4 py-3 text-right text-sm ${getYieldColor(Number(row.gross_rental_yield))}`}>
-                          {(Number(row.gross_rental_yield) || 0).toFixed(1)}%
-                        </td>
                       </>
                     ) : (
                       <>
@@ -273,7 +267,7 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                   {/* Expanded detail row — all modes */}
                   {isExpanded && (
                     <tr className="bg-gray-900/60">
-                      <td colSpan={7} className="px-6 py-5">
+                      <td colSpan={cfMode ? 6 : 7} className="px-6 py-5">
                         <div className="space-y-4">
 
                           {/* CF breakdown (CF mode only) — waterfall order */}

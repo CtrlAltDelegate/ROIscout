@@ -528,10 +528,8 @@ const dataController = {
         const price = bedroomPrice || Number(row.price_sfr || row.median_price);
         if (!price || price > maxPrice) continue;
 
-        // Rent: use median_rent (Zillow ZORI) — consistent with gross_rental_yield.
-        // HUD FMR uses metro-area aggregation that overstates rents in lower-cost
-        // sub-markets (e.g. Gary IN is in Chicago HMFA, giving Chicago-level FMR).
-        const rent = Number(row.median_rent || row.rent_sfr);
+        // Rent: use SFR ZORI — investors are buying houses, not apartments.
+        const rent = Number(row.rent_sfr || row.median_rent);
         if (!rent) continue;
 
         // PITI
