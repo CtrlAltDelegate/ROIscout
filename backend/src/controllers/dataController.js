@@ -582,7 +582,7 @@ const dataController = {
             annualCF:  Math.round(annualCF),
             coc:       parseFloat(coc.toFixed(2)),
             matchScore: parseFloat(matchScore.toFixed(4)),
-            multiplier: parseFloat(multiplier.toFixed(3)),
+            multiplier: 1,
             beds, baths,
           },
         });
