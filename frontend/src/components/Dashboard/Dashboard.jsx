@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Map, Search, BarChart2, Bookmark, Calculator,
-  Info, Compass,
+  Info, Compass, Menu, X,
 } from 'lucide-react';
 import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
@@ -39,6 +39,7 @@ const ROIscoutDashboard = ({ user }) => {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [savedSearches, setSavedSearches]     = useState([]);
   const [savedLoading, setSavedLoading]       = useState(false);
+  const [sidebarOpen, setSidebarOpen]         = useState(false);
 
   const userPlan  = user?.subscription_plan || user?.plan || 'free';
   const isAdmin   = !!user?.is_admin;
@@ -89,6 +90,11 @@ const ROIscoutDashboard = ({ user }) => {
     if (filters.maxPrice)     params.set('maxPrice', filters.maxPrice);
     if (filters.minRent)      params.set('minRent', filters.minRent);
     window.location.search = params.toString();
+  }, []);
+
+  const handleNavClick = useCallback((id) => {
+    setActiveTab(id);
+    setSidebarOpen(false);
   }, []);
 
   const handleZipViewed = useCallback(() => {
@@ -255,10 +261,51 @@ const ROIscoutDashboard = ({ user }) => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+
+      {/* ── Mobile top bar (hidden on lg+) ──────────────────────────────── */}
+      <header className="lg:hidden flex items-center justify-between bg-slate-900 px-4 py-3 flex-shrink-0">
+        <span className="text-white font-bold text-base tracking-tight">ROIScout</span>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="text-slate-300 hover:text-white p-1"
+          aria-label="Open navigation"
+        >
+          <Menu size={22} />
+        </button>
+      </header>
+
       <div className="flex flex-1 overflow-hidden">
 
+        {/* ── Overlay backdrop (mobile only) ────────────────────────────── */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         {/* ── Sidebar ───────────────────────────────────────────────────── */}
-        <aside className="w-[220px] bg-slate-900 flex flex-col flex-shrink-0 overflow-y-auto">
+        <aside
+          className={`
+            bg-slate-900 flex flex-col flex-shrink-0 overflow-y-auto
+            fixed inset-y-0 left-0 z-50 w-[220px] transition-transform duration-200
+            lg:static lg:translate-x-0 lg:z-auto
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
+        >
+          {/* Mobile sidebar header */}
+          <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-slate-800">
+            <span className="text-white font-bold text-base tracking-tight">ROIScout</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-slate-300 hover:text-white p-1"
+              aria-label="Close navigation"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
           {/* Nav */}
           <nav className="flex-1 px-3 pt-4 space-y-0.5">
             {NAV_ITEMS.map(({ id, label, Icon }) => {
@@ -266,7 +313,7 @@ const ROIscoutDashboard = ({ user }) => {
               return (
                 <button
                   key={id}
-                  onClick={() => setActiveTab(id)}
+                  onClick={() => handleNavClick(id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
                     active
                       ? 'bg-slate-800 text-white border-l-2 border-green-400 pl-[10px]'

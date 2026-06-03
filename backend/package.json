@@ -70,5 +70,10 @@
   "bugs": {
     "url": "https://github.com/yourusername/roiscout/issues"
   },
-  "homepage": "https://roiscout.com"
+  "homepage": "https://roiscout.com",
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/src/tests/**/*.test.js"],
+    "testTimeout": 15000
+  }
 }

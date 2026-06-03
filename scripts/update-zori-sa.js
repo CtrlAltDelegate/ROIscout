@@ -101,7 +101,22 @@ async function main() {
   if (dryRun) console.log('\nRe-run without --dry-run to apply changes.');
 }
 
-main().catch(err => {
-  console.error('Fatal:', err.message);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    if (!dryRun) triggerAlerts();
+  })
+  .catch(err => {
+    console.error('Fatal:', err.message);
+    process.exit(1);
+  });
+
+async function triggerAlerts() {
+  try {
+    const { checkAndSendAlerts } = require('../backend/src/services/alertService');
+    console.log('\nRunning yield-change alerts for Pro users...');
+    const result = await checkAndSendAlerts({ defaultThreshold: 8 });
+    console.log(`  Alerts sent: ${result.usersAlerted} users, ${result.totalMatches} matches`);
+  } catch (err) {
+    console.warn('  Alert trigger skipped:', err.message);
+  }
+}
