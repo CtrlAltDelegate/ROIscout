@@ -17,29 +17,32 @@ function initSentry() {
     integrations.push(Sentry.expressIntegration());
   }
 
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    integrations,
-    release: process.env.SENTRY_RELEASE || `roiscout-backend@${process.env.npm_package_version || '1.0.0'}`,
-    beforeSend(event, hint) {
-      if (process.env.NODE_ENV === 'development' && !process.env.SENTRY_ENABLE_DEV) {
-        return null;
+  try {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      integrations,
+      release: process.env.SENTRY_RELEASE || `roiscout-backend@${process.env.npm_package_version || '1.0.0'}`,
+      beforeSend(event, hint) {
+        if (process.env.NODE_ENV === 'development' && !process.env.SENTRY_ENABLE_DEV) {
+          return null;
+        }
+        const error = hint.originalException;
+        if (error && error.message) {
+          if (error.message.includes('ECONNREFUSED') && error.message.includes('5432')) return null;
+          if (error.message.includes('Redis') && error.message.includes('ECONNREFUSED')) return null;
+        }
+        return event;
+      },
+      initialScope: {
+        tags: { component: 'backend', service: 'roiscout-api' }
       }
-      const error = hint.originalException;
-      if (error && error.message) {
-        if (error.message.includes('ECONNREFUSED') && error.message.includes('5432')) return null;
-        if (error.message.includes('Redis') && error.message.includes('ECONNREFUSED')) return null;
-      }
-      return event;
-    },
-    initialScope: {
-      tags: { component: 'backend', service: 'roiscout-api' }
-    }
-  });
-
-  console.log('✅ Sentry error tracking initialized');
+    });
+    console.log('✅ Sentry error tracking initialized');
+  } catch (err) {
+    console.warn('⚠️ Sentry init failed (non-fatal):', err.message);
+  }
 }
 
 // Pass-through no-ops — request/tracing handlers are auto-wired in v8+.
