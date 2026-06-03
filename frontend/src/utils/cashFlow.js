@@ -80,14 +80,13 @@ export function calcCashFlow(row, params) {
   const price = bedroomPrice || Number(row.price_sfr || row.median_price);
   if (!price) return null;
 
-  // Rent: use HUD FMR for the specific bedroom count when available — it is
-  // county-level and bedroom-specific (40th-percentile market rate), so it is
-  // the most grounded estimate for an investor's rent projection.
-  // Fall back to median_rent (no multiplier) when HUD data is absent.
-  const fmrN = Number(row[`hud_fmr_${bedCount}br`]);
-  const baseRent = Number(row.median_rent || row.rent_sfr);
-  if (!fmrN && !baseRent) return null;
-  const rent = fmrN || baseRent;
+  // Rent: use median_rent (Zillow ZORI all-homes median) — this is what
+  // gross_rental_yield is derived from, so cash flow stays internally
+  // consistent with the yield column. HUD FMR is unreliable for this purpose
+  // because it uses metro-area aggregation that can dramatically overstate
+  // rents in lower-cost sub-markets (e.g. Gary IN uses Chicago metro FMR).
+  const rent = Number(row.median_rent || row.rent_sfr);
+  if (!rent) return null;
 
   // Financing
   const downAmount  = price * (downPct / 100);

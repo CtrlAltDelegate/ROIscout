@@ -528,13 +528,11 @@ const dataController = {
         const price = bedroomPrice || Number(row.price_sfr || row.median_price);
         if (!price || price > maxPrice) continue;
 
-        // Use HUD FMR for the specific bedroom count when available —
-        // county-level and bedroom-specific, most grounded rent estimate.
-        // Fall back to median_rent (no multiplier) when HUD data is absent.
-        const fmrN = Number(row[`hud_fmr_${beds}br`]);
-        const baseRent = Number(row.median_rent || row.rent_sfr);
-        if (!fmrN && !baseRent) continue;
-        const rent = fmrN || baseRent;
+        // Rent: use median_rent (Zillow ZORI) — consistent with gross_rental_yield.
+        // HUD FMR uses metro-area aggregation that overstates rents in lower-cost
+        // sub-markets (e.g. Gary IN is in Chicago HMFA, giving Chicago-level FMR).
+        const rent = Number(row.median_rent || row.rent_sfr);
+        if (!rent) continue;
 
         // PITI
         const down        = price * (downPct / 100);
