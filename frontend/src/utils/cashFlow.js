@@ -123,8 +123,7 @@ export function calcCashFlow(row, params) {
 
   return {
     price,
-    baseRent,        // fallback base rent (when HUD FMR not available)
-    rent,            // bedroom-specific rent used for cash flow
+    rent,
     rentMultiplier: 1,
     beds: bedCount,
     baths: Number(baths) || 2,
