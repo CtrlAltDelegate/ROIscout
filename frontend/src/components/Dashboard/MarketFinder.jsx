@@ -353,7 +353,7 @@ function ResultsSummary({ response, answers }) {
     <div className="mb-5">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-slate-900">
             {total === 0 ? 'No markets found' : `${total > 25 ? '25+' : total} Markets Found`}
           </h2>
           <p className="text-sm text-gray-400 mt-0.5">

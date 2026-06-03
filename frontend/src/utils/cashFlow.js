@@ -80,8 +80,8 @@ export function calcCashFlow(row, params) {
   const price = bedroomPrice || Number(row.price_sfr || row.median_price);
   if (!price) return null;
 
-  // Rent: use SFR ZORI base if available, fall back to all-homes ZORI
-  const baseRent = Number(row.rent_sfr || row.median_rent);
+  // Rent: use all-homes ZORI (consistent with gross_rental_yield), fall back to SFR ZORI
+  const baseRent = Number(row.median_rent || row.rent_sfr);
   if (!baseRent) return null;
 
   // Use HUD county-level bedroom ratios if available, else national multiplier

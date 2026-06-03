@@ -528,7 +528,7 @@ const dataController = {
         const price = bedroomPrice || Number(row.price_sfr || row.median_price);
         if (!price || price > maxPrice) continue;
 
-        const baseRent = Number(row.rent_sfr || row.median_rent);
+        const baseRent = Number(row.median_rent || row.rent_sfr);
         if (!baseRent) continue;
 
         // Bedroom rent multiplier
