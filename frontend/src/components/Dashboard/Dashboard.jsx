@@ -4,8 +4,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import {
-  Map, Search, BarChart2, Bookmark, Calculator, Star,
-  TrendingUp, Target, Info, Compass,
+  Map, Search, BarChart2, Bookmark, Calculator,
+  Info, Compass,
 } from 'lucide-react';
 import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
@@ -70,22 +70,6 @@ const ROIscoutDashboard = ({ user }) => {
       return next;
     });
   }, [isFree, showSavePrompt]);
-
-  // ── Stat Cards ──────────────────────────────────────────────────────────────
-  const StatCard = ({ Icon, iconBg, iconColor, label, value, sub }) => (
-    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
-          <p className="text-2xl font-semibold text-slate-900 mt-1">{value}</p>
-          {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
-        </div>
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-          <Icon size={18} className={iconColor} />
-        </div>
-      </div>
-    </div>
-  );
 
   // ── Yield chart helpers ──────────────────────────────────────────────────────
   const bucketColor = (bucket) => {
@@ -275,44 +259,6 @@ const ROIscoutDashboard = ({ user }) => {
 
         {/* ── Main content ──────────────────────────────────────────────── */}
         <main className="flex-1 overflow-auto">
-          {/* Stat cards strip */}
-          <div className="bg-white border-b border-slate-200 px-6 py-4">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                Icon={Map}
-                iconBg="bg-slate-100"
-                iconColor="text-slate-500"
-                label="Zip Codes Tracked"
-                value={statsLoading ? '…' : stats ? stats.totalZips.toLocaleString() : '—'}
-                sub={stats ? `${stats.statesCovered} states` : null}
-              />
-              <StatCard
-                Icon={TrendingUp}
-                iconBg="bg-green-50"
-                iconColor="text-green-600"
-                label="Avg Gross Yield"
-                value={statsLoading ? '…' : stats ? `${stats.avgYield}%` : '—'}
-                sub="Across all markets"
-              />
-              <StatCard
-                Icon={Target}
-                iconBg="bg-green-50"
-                iconColor="text-green-600"
-                label="Exceptional ZIPs ≥10%"
-                value={statsLoading ? '…' : stats ? stats.exceptionalCount.toLocaleString() : '—'}
-                sub="High-yield markets"
-              />
-              <StatCard
-                Icon={Star}
-                iconBg="bg-slate-100"
-                iconColor="text-slate-500"
-                label="High-Yield ZIPs ≥8%"
-                value={statsLoading ? '…' : stats ? stats.excellentCount.toLocaleString() : '—'}
-                sub="Strong performers"
-              />
-            </div>
-          </div>
-
           {/* Tab body */}
           <div className="p-6">
             {renderTabContent()}
