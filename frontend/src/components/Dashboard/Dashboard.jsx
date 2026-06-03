@@ -31,7 +31,6 @@ const ROIscoutDashboard = ({ user }) => {
     return VALID_TABS.includes(tab) ? tab : 'map';
   });
   const [stats, setStats]                     = useState(null);
-  const [statsLoading, setStatsLoading]       = useState(true);
   const [isFirstVisit, setIsFirstVisit]       = useState(false);
   const [showSavePrompt, setShowSavePrompt]   = useState(false);
   const [zipViewCount, setZipViewCount]       = useState(0);
@@ -50,8 +49,7 @@ const ROIscoutDashboard = ({ user }) => {
   useEffect(() => {
     apiService.getDashboardStats()
       .then(data => setStats(data))
-      .catch(() => setStats(null))
-      .finally(() => setStatsLoading(false));
+      .catch(() => setStats(null));
   }, []);
 
   useEffect(() => {
