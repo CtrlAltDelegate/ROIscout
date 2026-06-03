@@ -431,7 +431,6 @@ const dataController = {
       res.status(500).json({ error: 'Failed to get stats' });
     }
   },
-};
 
   /**
    * Find top matching markets based on investor wizard parameters.
@@ -606,7 +605,6 @@ const dataController = {
       res.status(500).json({ error: 'Failed to find markets' });
     }
   },
-
 };
 
 module.exports = dataController;
