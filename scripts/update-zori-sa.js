@@ -66,7 +66,7 @@ async function main() {
   let skipped = 0;
 
   for (const row of rows) {
-    const rent = row.latest;
+    const rent = row.value;
     if (!rent || rent <= 0) { skipped++; continue; }
 
     if (dryRun) {
@@ -76,16 +76,15 @@ async function main() {
 
     const result = await db.query(
       `UPDATE zip_data
-         SET median_rent         = $1,
-             -- Recalculate yield metrics from new rent
+         SET median_rent         = $1::integer,
              gross_rental_yield  = CASE WHEN median_price > 0
-                                     THEN ROUND(($1 * 12.0 / median_price * 100)::numeric, 2)
+                                     THEN ROUND(($1::numeric * 12.0 / median_price * 100), 2)
                                      ELSE gross_rental_yield END,
              rent_to_price_ratio = CASE WHEN median_price > 0
-                                     THEN ROUND(($1 * 12.0 / median_price)::numeric, 4)
+                                     THEN ROUND(($1::numeric * 12.0 / median_price), 4)
                                      ELSE rent_to_price_ratio END,
-             grm                 = CASE WHEN $1 > 0 AND median_price > 0
-                                     THEN ROUND((median_price / ($1 * 12.0))::numeric, 2)
+             grm                 = CASE WHEN $1::numeric > 0 AND median_price > 0
+                                     THEN ROUND((median_price / ($1::numeric * 12.0)), 2)
                                      ELSE grm END
        WHERE zip_code = $2`,
       [rent, row.zipCode]
