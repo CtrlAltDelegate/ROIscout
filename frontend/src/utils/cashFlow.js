@@ -126,9 +126,9 @@ export function calcCashFlow(row, params) {
 
   return {
     price,
-    baseRent,        // Zillow ZORI base (before bedroom adjustment)
-    rent,            // adjusted rent for selected bedroom count
-    rentMultiplier: multiplier,
+    baseRent,        // fallback base rent (when HUD FMR not available)
+    rent,            // bedroom-specific rent used for cash flow
+    rentMultiplier: 1,
     beds: bedCount,
     baths: Number(baths) || 2,
     downAmount,
