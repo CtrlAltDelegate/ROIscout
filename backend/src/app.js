@@ -6,7 +6,7 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 // Initialize Sentry first
-const { initSentry, getSentryMiddleware } = require('./config/sentry');
+const { initSentry, getSentryMiddleware, Sentry } = require('./config/sentry');
 initSentry();
 
 // Import middleware
@@ -112,8 +112,10 @@ app.use('*', (req, res) => {
   });
 });
 
-// Sentry error handler (must be before other error handlers)
-app.use(sentryMiddleware.errorHandler);
+// Sentry v8+ error handler
+if (process.env.SENTRY_DSN && typeof Sentry.setupExpressErrorHandler === 'function') {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // Global error handler
 app.use((err, req, res, next) => {

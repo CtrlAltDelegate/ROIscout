@@ -1,101 +1,54 @@
 const Sentry = require('@sentry/node');
-let ProfilingIntegration;
-try {
-  ProfilingIntegration = require('@sentry/profiling-node').ProfilingIntegration;
-} catch (_) {
-  // profiling-node not installed — profiling disabled
-}
 
-/**
- * Initialize Sentry for error tracking and performance monitoring
- */
+// Sentry v8+ removed Handlers and Integrations.Http/Express.
+// Use the new httpIntegration / expressIntegration / setupExpressErrorHandler API.
+
 function initSentry() {
   if (!process.env.SENTRY_DSN) {
     console.log('⚠️ Sentry DSN not configured, skipping error tracking setup');
     return;
   }
 
+  const integrations = [];
+  if (typeof Sentry.httpIntegration === 'function') {
+    integrations.push(Sentry.httpIntegration());
+  }
+  if (typeof Sentry.expressIntegration === 'function') {
+    integrations.push(Sentry.expressIntegration());
+  }
+
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || 'development',
-    
-    // Performance Monitoring
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    
-    // Profiling
-    profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    
-    integrations: [
-      // Enable HTTP calls tracing
-      new Sentry.Integrations.Http({ tracing: true }),
-      
-      // Enable Express.js middleware tracing
-      new Sentry.Integrations.Express({ app: undefined }),
-      
-      // Enable profiling (if available)
-      ...(ProfilingIntegration ? [new ProfilingIntegration()] : []),
-    ],
-    
-    // Release tracking
+    integrations,
     release: process.env.SENTRY_RELEASE || `roiscout-backend@${process.env.npm_package_version || '1.0.0'}`,
-    
-    // Error filtering
     beforeSend(event, hint) {
-      // Don't send errors in development unless explicitly enabled
       if (process.env.NODE_ENV === 'development' && !process.env.SENTRY_ENABLE_DEV) {
         return null;
       }
-      
-      // Filter out common non-critical errors
       const error = hint.originalException;
       if (error && error.message) {
-        // Skip database connection errors during startup
-        if (error.message.includes('ECONNREFUSED') && error.message.includes('5432')) {
-          return null;
-        }
-        
-        // Skip Redis connection errors
-        if (error.message.includes('Redis') && error.message.includes('ECONNREFUSED')) {
-          return null;
-        }
+        if (error.message.includes('ECONNREFUSED') && error.message.includes('5432')) return null;
+        if (error.message.includes('Redis') && error.message.includes('ECONNREFUSED')) return null;
       }
-      
       return event;
     },
-    
-    // Additional context
     initialScope: {
-      tags: {
-        component: 'backend',
-        service: 'roiscout-api'
-      }
+      tags: { component: 'backend', service: 'roiscout-api' }
     }
   });
 
   console.log('✅ Sentry error tracking initialized');
 }
 
-/**
- * Express middleware for Sentry request handling
- */
+// Pass-through no-ops — request/tracing handlers are auto-wired in v8+.
+// Error handler is registered via setupExpressErrorHandler(app) in app.js.
 function getSentryMiddleware() {
-  if (!process.env.SENTRY_DSN) {
-    return {
-      requestHandler: (req, res, next) => next(),
-      tracingHandler: (req, res, next) => next(),
-      errorHandler: (error, req, res, next) => next(error)
-    };
-  }
-
   return {
-    requestHandler: Sentry.Handlers.requestHandler(),
-    tracingHandler: Sentry.Handlers.tracingHandler(),
-    errorHandler: Sentry.Handlers.errorHandler({
-      shouldHandleError(error) {
-        // Capture all 4xx and 5xx errors
-        return error.status >= 400;
-      }
-    })
+    requestHandler: (req, res, next) => next(),
+    tracingHandler: (req, res, next) => next(),
+    errorHandler: (error, req, res, next) => next(error),
   };
 }
 
