@@ -455,6 +455,8 @@ const dataController = {
       const statesParam        = req.query.states                || '';
       const bedroomPriceOnly   = req.query.bedroomPriceOnly === '1';
       const minPopulation      = Number(req.query.minPopulation) || 0;
+      const minMedianPrice     = Number(req.query.minMedianPrice) || 0;
+      const minHHIncome        = Number(req.query.minHHIncome)    || 0;
       const limit              = Math.min(Number(req.query.limit) || 25, 50);
 
       const maxPrice = downPct > 0 ? downBudget / (downPct / 100) : 0;
@@ -502,6 +504,16 @@ const dataController = {
       if (marketType === 'hot')        conditions.push('(market_heat_index > 55 OR days_on_market < 15)');
       if (marketType === 'stable')     conditions.push('(days_on_market > 20 OR days_on_market IS NULL)');
       if (marketType === 'affordable') conditions.push(`${priceExpr} < 150000`);
+
+      // Minimum median home price — excludes distressed-median markets
+      if (minMedianPrice > 0) {
+        conditions.push(`${priceExpr} >= ${minMedianPrice}`);
+      }
+
+      // Minimum median household income — filters weak tenant pool markets
+      if (minHHIncome > 0) {
+        conditions.push(`median_household_income >= ${minHHIncome}`);
+      }
 
       // Population filter — exclude small/distressed markets
       if (minPopulation > 0) {

@@ -341,6 +341,46 @@ function StepGoals({ data, set }) {
       </div>
 
       <div>
+        <FieldLabel sub="Filters out markets where distressed properties skew the median below realistic purchase prices">Minimum Median Home Price</FieldLabel>
+        <div className="flex gap-2">
+          {[
+            { label: 'Any',     value: 0      },
+            { label: '$75k+',   value: 75000  },
+            { label: '$100k+',  value: 100000 },
+            { label: '$150k+',  value: 150000 },
+            { label: '$200k+',  value: 200000 },
+          ].map(({ label, value }) => (
+            <button key={value} onClick={() => set('minMedianPrice', value)}
+              className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-all ${
+                data.minMedianPrice === value ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <FieldLabel sub="Markets below this threshold often have weaker tenant pools and higher vacancy risk">Minimum Median Household Income</FieldLabel>
+        <div className="flex gap-2">
+          {[
+            { label: 'Any',     value: 0     },
+            { label: '$35k+',   value: 35000 },
+            { label: '$45k+',   value: 45000 },
+            { label: '$55k+',   value: 55000 },
+            { label: '$65k+',   value: 65000 },
+          ].map(({ label, value }) => (
+            <button key={value} onClick={() => set('minHHIncome', value)}
+              className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-all ${
+                data.minHHIncome === value ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
         <FieldLabel>Minimum Market Size</FieldLabel>
         <div className="flex gap-2">
           {[
@@ -450,6 +490,8 @@ const DEFAULT_ANSWERS = {
   minCoc:           8,
   priority:         'cashflow',
   marketType:       'any',
+  minMedianPrice:   0,
+  minHHIncome:      0,
   minPopulation:    0,
   bedroomPriceOnly: false,
 };
@@ -504,7 +546,9 @@ const MarketFinder = ({ user }) => {
         minCoc:        answers.minCoc,
         priority:      answers.priority,
         marketType:       answers.marketType,
-        minPopulation:    answers.minPopulation || '',
+        minMedianPrice:   answers.minMedianPrice || '',
+        minHHIncome:      answers.minHHIncome    || '',
+        minPopulation:    answers.minPopulation  || '',
         bedroomPriceOnly: answers.bedroomPriceOnly ? '1' : '',
         limit:            25,
       });
