@@ -29,7 +29,7 @@ async function checkAndSendAlerts({ defaultThreshold = 8 } = {}) {
     SELECT DISTINCT u.id, u.email
     FROM users u
     JOIN saved_searches ss ON ss.user_id = u.id
-    WHERE (u.subscription_plan = 'pro' OR u.plan = 'pro')
+    WHERE u.subscription_plan = 'pro'
       AND u.email IS NOT NULL
   `);
 
