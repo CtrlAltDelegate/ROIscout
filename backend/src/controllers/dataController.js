@@ -453,6 +453,7 @@ const dataController = {
       const marketType    = req.query.marketType            || 'any';      // any|stable|hot|affordable
       const statesParam        = req.query.states                || '';
       const bedroomPriceOnly   = req.query.bedroomPriceOnly === '1';
+      const minPopulation      = Number(req.query.minPopulation) || 0;
       const limit              = Math.min(Number(req.query.limit) || 25, 50);
 
       const maxPrice = downPct > 0 ? downBudget / (downPct / 100) : 0;
@@ -500,6 +501,11 @@ const dataController = {
       if (marketType === 'hot')        conditions.push('(market_heat_index > 55 OR days_on_market < 15)');
       if (marketType === 'stable')     conditions.push('(days_on_market > 20 OR days_on_market IS NULL)');
       if (marketType === 'affordable') conditions.push(`${priceExpr} < 150000`);
+
+      // Population filter — exclude small/distressed markets
+      if (minPopulation > 0) {
+        conditions.push(`population >= ${minPopulation}`);
+      }
 
       // Bedroom-specific ZHVI filter — exclude markets where Zillow only has all-homes median
       if (bedroomPriceOnly) {

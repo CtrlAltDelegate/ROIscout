@@ -341,6 +341,27 @@ function StepGoals({ data, set }) {
       </div>
 
       <div>
+        <FieldLabel>Minimum Market Size</FieldLabel>
+        <div className="flex gap-2">
+          {[
+            { label: 'Any',    value: 0     },
+            { label: '2,500+', value: 2500  },
+            { label: '5,000+', value: 5000  },
+            { label: '10,000+',value: 10000 },
+            { label: '25,000+',value: 25000 },
+          ].map(({ label, value }) => (
+            <button key={value} onClick={() => set('minPopulation', value)}
+              className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-all ${
+                data.minPopulation === value ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-1.5">Filters out distressed and rural markets with low rental demand</p>
+      </div>
+
+      <div>
         <button
           onClick={() => set('bedroomPriceOnly', !data.bedroomPriceOnly)}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all text-sm ${
@@ -350,8 +371,8 @@ function StepGoals({ data, set }) {
           }`}
         >
           <div className="text-left">
-            <p className="font-medium">Bedroom-specific prices only</p>
-            <p className="text-xs opacity-70 mt-0.5">Exclude markets where Zillow only has an all-homes median (e.g. most of Indiana, FL, OH)</p>
+            <p className="font-medium">Restrict to highest-confidence markets</p>
+            <p className="text-xs opacity-70 mt-0.5">Only show markets where Zillow publishes bedroom-specific home values — excludes states like Indiana and Florida where only blended data is available</p>
           </div>
           <div className={`w-5 h-5 rounded border-2 flex-shrink-0 ml-3 flex items-center justify-center ${
             data.bedroomPriceOnly ? 'bg-emerald-500 border-emerald-500' : 'border-gray-600'
@@ -426,9 +447,10 @@ const DEFAULT_ANSWERS = {
   selectedStates: [],
   userState:      '',
   // Step 4
-  minCoc:         8,
-  priority:       'cashflow',
-  marketType:     'any',
+  minCoc:           8,
+  priority:         'cashflow',
+  marketType:       'any',
+  minPopulation:    0,
   bedroomPriceOnly: false,
 };
 
@@ -482,6 +504,7 @@ const MarketFinder = ({ user }) => {
         minCoc:        answers.minCoc,
         priority:      answers.priority,
         marketType:       answers.marketType,
+        minPopulation:    answers.minPopulation || '',
         bedroomPriceOnly: answers.bedroomPriceOnly ? '1' : '',
         limit:            25,
       });
