@@ -232,8 +232,10 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                     </td>
                     <td className="px-4 py-3 text-right text-white">
                       ${(cfMode && cf ? cf.price : Number(row.median_price) || 0).toLocaleString()}
-                      {cfMode && cf && cf.price !== Number(row.median_price) && (
-                        <span className="text-gray-500 text-xs ml-1">({cf.beds}BR)</span>
+                      {cfMode && cf && (
+                        <span className="text-gray-500 text-xs ml-1">
+                          {cf.price !== Number(row.median_price) ? `(${cf.beds}BR)` : '(all homes)'}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-white">

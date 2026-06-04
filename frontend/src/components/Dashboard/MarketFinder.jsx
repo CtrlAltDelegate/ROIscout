@@ -339,6 +339,27 @@ function StepGoals({ data, set }) {
           <ChoiceButton label="💰 Affordable entry" sub="Sub-$150k purchase prices" active={data.marketType === 'affordable'} onClick={() => set('marketType', 'affordable')} />
         </div>
       </div>
+
+      <div>
+        <button
+          onClick={() => set('bedroomPriceOnly', !data.bedroomPriceOnly)}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all text-sm ${
+            data.bedroomPriceOnly
+              ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
+              : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+          }`}
+        >
+          <div className="text-left">
+            <p className="font-medium">Bedroom-specific prices only</p>
+            <p className="text-xs opacity-70 mt-0.5">Exclude markets where Zillow only has an all-homes median (e.g. most of Indiana, FL, OH)</p>
+          </div>
+          <div className={`w-5 h-5 rounded border-2 flex-shrink-0 ml-3 flex items-center justify-center ${
+            data.bedroomPriceOnly ? 'bg-emerald-500 border-emerald-500' : 'border-gray-600'
+          }`}>
+            {data.bedroomPriceOnly && <span className="text-white text-xs font-bold">✓</span>}
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
@@ -408,6 +429,7 @@ const DEFAULT_ANSWERS = {
   minCoc:         8,
   priority:       'cashflow',
   marketType:     'any',
+  bedroomPriceOnly: false,
 };
 
 const STEP_TITLES = [
@@ -459,8 +481,9 @@ const MarketFinder = ({ user }) => {
         states:        getStates(),
         minCoc:        answers.minCoc,
         priority:      answers.priority,
-        marketType:    answers.marketType,
-        limit:         25,
+        marketType:       answers.marketType,
+        bedroomPriceOnly: answers.bedroomPriceOnly ? '1' : '',
+        limit:            25,
       });
       setResults(res);
       setStep('results');

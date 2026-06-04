@@ -451,8 +451,9 @@ const dataController = {
       const minCoc        = Number(req.query.minCoc)        || 5;
       const priority      = req.query.priority              || 'cashflow'; // cashflow|growth|entry
       const marketType    = req.query.marketType            || 'any';      // any|stable|hot|affordable
-      const statesParam   = req.query.states                || '';
-      const limit         = Math.min(Number(req.query.limit) || 25, 50);
+      const statesParam        = req.query.states                || '';
+      const bedroomPriceOnly   = req.query.bedroomPriceOnly === '1';
+      const limit              = Math.min(Number(req.query.limit) || 25, 50);
 
       const maxPrice = downPct > 0 ? downBudget / (downPct / 100) : 0;
       if (maxPrice <= 0) return res.status(400).json({ error: 'Invalid down payment parameters' });
@@ -499,6 +500,12 @@ const dataController = {
       if (marketType === 'hot')        conditions.push('(market_heat_index > 55 OR days_on_market < 15)');
       if (marketType === 'stable')     conditions.push('(days_on_market > 20 OR days_on_market IS NULL)');
       if (marketType === 'affordable') conditions.push(`${priceExpr} < 150000`);
+
+      // Bedroom-specific ZHVI filter — exclude markets where Zillow only has all-homes median
+      if (bedroomPriceOnly) {
+        const priceCol = beds <= 4 ? `price_${beds}br` : 'price_5br';
+        conditions.push(`${priceCol} IS NOT NULL`);
+      }
 
       const sql = `
         SELECT
