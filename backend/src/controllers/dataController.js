@@ -485,8 +485,9 @@ const dataController = {
       const conditions = [
         'median_price > 0',
         'median_rent > 0',
-        // Sanity cap: >20% gross yield is almost always bad ZORI data on small/rural markets
-        '(median_rent * 12.0 / median_price * 100) <= 20',
+        // Sanity cap: >15% gross yield is almost always bad ZORI data
+        // (genuine high-yield markets peak at 12-14%; above 15% = almost certainly noise)
+        '(median_rent * 12.0 / median_price * 100) <= 15',
       ];
       const params     = [];
       let   pIdx       = 1;
