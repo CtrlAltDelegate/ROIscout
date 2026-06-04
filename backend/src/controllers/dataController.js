@@ -482,7 +482,12 @@ const dataController = {
       }
 
       // Build WHERE clause
-      const conditions = ['median_price > 0', 'median_rent > 0'];
+      const conditions = [
+        'median_price > 0',
+        'median_rent > 0',
+        // Sanity cap: >20% gross yield is almost always bad ZORI data on small/rural markets
+        '(median_rent * 12.0 / median_price * 100) <= 20',
+      ];
       const params     = [];
       let   pIdx       = 1;
 
