@@ -144,8 +144,17 @@ async function parseZillowCsv(filePathOrUrl, options = {}) {
   const lines = content.split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) return [];
   const header = lines[0].split(',').map((h) => h.replace(/^"|"$/g, '').trim());
-  const zipIdx = header.findIndex((h) => /RegionName|Region|Zip|ZIP|zip_code/i.test(h));
-  const stateIdx = header.findIndex((h) => /State|StateName|state/i.test(h));
+  // Match the exact zip column — must NOT match RegionID (which contains "Region" as substring)
+  const zipIdx = (() => {
+    // Prefer exact known column names first
+    for (const name of ['RegionName', 'zip_code', 'ZIP', 'Zip', 'zipcode']) {
+      const i = header.findIndex(h => h === name);
+      if (i !== -1) return i;
+    }
+    // Fallback: case-insensitive exact match
+    return header.findIndex(h => /^(RegionName|zip_code|zip)$/i.test(h));
+  })();
+  const stateIdx = header.findIndex((h) => /^(State|StateName)$/i.test(h));
   let valueIdx = valueColumn != null ? header.indexOf(valueColumn) : -1;
   if (valueIdx === -1) {
     const dateCols = header.map((h, i) => ({ h, i })).filter(({ h }) => /^\d{4}-\d{2}-\d{2}$/.test(h) || /^\d{2}\/\d{2}\/\d{4}$/.test(h));

@@ -32,12 +32,13 @@ const dryRun = process.argv.includes('--dry-run');
 const DATA_DIR = path.resolve(__dirname, '../backend/data');
 
 const BEDROOM_FILES = [
-  { col: 'price_1br',  file: 'zhvi_1br.csv'  },
-  { col: 'price_2br',  file: 'zhvi_2br.csv'  },
-  { col: 'price_3br',  file: 'zhvi_3br.csv'  },
-  { col: 'price_4br',  file: 'zhvi_4br.csv'  },
-  { col: 'price_5br',  file: 'zhvi_5br.csv'  },
-  { col: 'price_sfr',  file: 'zhvi_sfr.csv'  },
+  { col: 'median_price', file: 'zhvi.csv'     },  // all-homes median (was also corrupted)
+  { col: 'price_1br',   file: 'zhvi_1br.csv'  },
+  { col: 'price_2br',   file: 'zhvi_2br.csv'  },
+  { col: 'price_3br',   file: 'zhvi_3br.csv'  },
+  { col: 'price_4br',   file: 'zhvi_4br.csv'  },
+  { col: 'price_5br',   file: 'zhvi_5br.csv'  },
+  { col: 'price_sfr',   file: 'zhvi_sfr.csv'  },
 ];
 
 async function updateColumn(db, col, rows) {
