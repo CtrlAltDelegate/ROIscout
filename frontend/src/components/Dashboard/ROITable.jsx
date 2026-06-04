@@ -176,6 +176,9 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
               <th className={`${thCls} text-left`} onClick={() => handleSort('zip_code')}>
                 Zip {getSortIcon('zip_code')}
               </th>
+              <th className={`${thCls} text-left`} onClick={() => handleSort('state')}>
+                State {getSortIcon('state')}
+              </th>
               <th className={`${thCls} text-left`} onClick={() => handleSort('county')}>
                 County {getSortIcon('county')}
               </th>
@@ -226,6 +229,9 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                       {row.zip_code}
                       <span className="ml-1.5 text-gray-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
                     </td>
+                    <td className="px-4 py-3 text-gray-300 text-sm font-medium">
+                      {row.state}
+                    </td>
                     <td className="px-4 py-3 text-gray-300 text-sm">
                       {row.county}
                       <MarketDot row={row} />
@@ -269,7 +275,7 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                   {/* Expanded detail row — all modes */}
                   {isExpanded && (
                     <tr className="bg-gray-900/60">
-                      <td colSpan={cfMode ? 6 : 7} className="px-6 py-5">
+                      <td colSpan={cfMode ? 7 : 8} className="px-6 py-5">
                         <div className="space-y-4">
 
                           {/* CF breakdown (CF mode only) — waterfall order */}
@@ -335,6 +341,14 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                                   <span className={`font-bold text-base ${cocColor(cf.cashOnCash)}`}>{cf.cashOnCash.toFixed(1)}% CoC</span>
                                 </div>
                               </div>
+                            </div>
+                          )}
+
+                          {/* Metro */}
+                          {row.metro && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Metro Area</p>
+                              <p className="text-gray-300 text-sm">{row.metro}</p>
                             </div>
                           )}
 

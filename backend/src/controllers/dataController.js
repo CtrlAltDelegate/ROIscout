@@ -69,6 +69,7 @@ const dataController = {
           zip_code,
           state,
           county,
+          metro,
           median_price,
           median_rent,
           rent_sfr,
@@ -515,7 +516,7 @@ const dataController = {
 
       const sql = `
         SELECT
-          zip_code, state, county,
+          zip_code, state, county, metro,
           median_price, median_rent, rent_sfr,
           hud_fmr_1br, hud_fmr_2br, hud_fmr_3br, hud_fmr_4br,
           price_sfr, price_1br, price_2br, price_3br, price_4br, price_5br,
