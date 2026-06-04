@@ -32,7 +32,7 @@ const dryRun = process.argv.includes('--dry-run');
 const DATA_DIR = path.resolve(__dirname, '../backend/data');
 
 const BEDROOM_FILES = [
-  { col: 'median_price', file: 'zhvi.csv'     },  // all-homes median (was also corrupted)
+  { col: 'median_price', file: 'zhvi.csv'     },
   { col: 'price_1br',   file: 'zhvi_1br.csv'  },
   { col: 'price_2br',   file: 'zhvi_2br.csv'  },
   { col: 'price_3br',   file: 'zhvi_3br.csv'  },
@@ -41,20 +41,28 @@ const BEDROOM_FILES = [
   { col: 'price_sfr',   file: 'zhvi_sfr.csv'  },
 ];
 
+// To resume a partial run, set this to the first column that didn't complete:
+const RESUME_FROM = process.env.RESUME_FROM || '';
+
 async function updateColumn(db, col, rows) {
-  let updated = 0, skipped = 0;
-  for (const row of rows) {
-    const price = row.value;
-    if (!price || price <= 0) { skipped++; continue; }
-    if (dryRun) { updated++; continue; }
-    const res = await db.query(
-      `UPDATE zip_data SET ${col} = $1::integer WHERE zip_code = $2`,
-      [price, row.zipCode]
-    );
-    if (res.rowCount > 0) updated++;
-    else skipped++;
-  }
-  return { updated, skipped };
+  const valid = rows.filter(r => r.value && r.value > 0);
+  const skipped = rows.length - valid.length;
+
+  if (dryRun) return { updated: valid.length, skipped };
+
+  // Batch update using UNNEST — single query regardless of row count
+  const zips   = valid.map(r => r.zipCode);
+  const prices = valid.map(r => r.value);
+
+  const res = await db.query(
+    `UPDATE zip_data
+       SET ${col} = v.price::integer
+       FROM UNNEST($1::text[], $2::integer[]) AS v(zip, price)
+       WHERE zip_data.zip_code = v.zip`,
+    [zips, prices]
+  );
+
+  return { updated: res.rowCount, skipped: skipped + (valid.length - res.rowCount) };
 }
 
 async function main() {
@@ -70,7 +78,11 @@ async function main() {
 
   let totalUpdated = 0;
 
-  for (const { col, file } of BEDROOM_FILES) {
+  const filesToRun = RESUME_FROM
+    ? BEDROOM_FILES.slice(BEDROOM_FILES.findIndex(f => f.col === RESUME_FROM))
+    : BEDROOM_FILES;
+
+  for (const { col, file } of filesToRun) {
     const csvPath = path.join(DATA_DIR, file);
     if (!fs.existsSync(csvPath)) {
       console.log(`  SKIP ${col} — file not found: ${file}`);
