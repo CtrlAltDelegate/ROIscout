@@ -540,26 +540,26 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
       )}
 
       {/* Legend */}
-      <div className="px-4 py-3 bg-gray-900/30 text-xs text-gray-500 border-t border-gray-700">
+      <div className="px-4 py-3 bg-gray-900/30 text-xs text-gray-500 border-t border-gray-700 flex flex-wrap gap-x-3 gap-y-1 items-center">
         {cfMode ? (
           <>
             <strong className="text-gray-400">Cash-on-cash:</strong>
-            <span className="text-emerald-400 ml-2">Excellent (10%+)</span>
-            <span className="text-emerald-300 ml-2">Good (6–10%)</span>
-            <span className="text-yellow-400 ml-2">Fair (2–6%)</span>
-            <span className="text-orange-400 ml-2">Break-even (0–2%)</span>
-            <span className="text-red-400 ml-2">Negative</span>
-            <span className="text-gray-600 ml-4">· Click any row to expand full breakdown</span>
+            <span className="text-emerald-400">Excellent (10%+)</span>
+            <span className="text-emerald-300">Good (6–10%)</span>
+            <span className="text-yellow-400">Fair (2–6%)</span>
+            <span className="text-orange-400">Break-even (0–2%)</span>
+            <span className="text-red-400">Negative</span>
+            <span className="text-gray-600">· Click any row to expand</span>
           </>
         ) : (
           <>
             <strong className="text-gray-400">Gross yield:</strong>
-            <span className="text-green-400 ml-2">Excellent (10%+)</span>
-            <span className="text-green-300 ml-2">Good (8–10%)</span>
-            <span className="text-yellow-400 ml-2">Fair (6–8%)</span>
-            <span className="text-orange-400 ml-2">Poor (4–6%)</span>
-            <span className="text-red-400 ml-2">Very Poor (&lt;4%)</span>
-            <span className="text-gray-600 ml-4">· Click any row to expand market details</span>
+            <span className="text-green-400">Excellent (10%+)</span>
+            <span className="text-green-300">Good (8–10%)</span>
+            <span className="text-yellow-400">Fair (6–8%)</span>
+            <span className="text-orange-400">Poor (4–6%)</span>
+            <span className="text-red-400">Very Poor (&lt;4%)</span>
+            <span className="text-gray-600">· Click any row to expand</span>
           </>
         )}
       </div>

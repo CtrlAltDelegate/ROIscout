@@ -33,6 +33,8 @@ const ROIscoutDashboard = ({ user }) => {
   });
   const [stats, setStats]                     = useState(null);
   const [isFirstVisit, setIsFirstVisit]       = useState(false);
+  const [cfFirstVisit, setCfFirstVisit]       = useState(false);
+  const [finderFirstVisit, setFinderFirstVisit] = useState(false);
   const [showSavePrompt, setShowSavePrompt]   = useState(false);
   const [zipViewCount, setZipViewCount]       = useState(0);
   const [analytics, setAnalytics]             = useState(null);
@@ -46,8 +48,9 @@ const ROIscoutDashboard = ({ user }) => {
   const isFree    = userPlan === 'free' && !isAdmin; // admins are always unlimited
 
   useEffect(() => {
-    const hasVisited = localStorage.getItem('roi_scout_visited');
-    if (!hasVisited) { setIsFirstVisit(true); localStorage.setItem('roi_scout_visited', 'true'); }
+    if (!localStorage.getItem('roi_scout_visited'))    { setIsFirstVisit(true);    localStorage.setItem('roi_scout_visited',    'true'); }
+    if (!localStorage.getItem('roi_scout_cf_visited')) { setCfFirstVisit(true);    localStorage.setItem('roi_scout_cf_visited', 'true'); }
+    if (!localStorage.getItem('roi_scout_fin_visited')){ setFinderFirstVisit(true); localStorage.setItem('roi_scout_fin_visited','true'); }
   }, []);
 
   useEffect(() => {
@@ -66,7 +69,7 @@ const ROIscoutDashboard = ({ user }) => {
   }, [activeTab, analytics, analyticsLoading]);
 
   useEffect(() => {
-    if (activeTab !== 'saved' || savedLoading) return;
+    if (activeTab !== 'saved') return;
     setSavedLoading(true);
     apiService.getSavedSearches()
       .then(data => setSavedSearches(data))
@@ -162,10 +165,42 @@ const ROIscoutDashboard = ({ user }) => {
         return <ROITableView user={user} />;
 
       case 'cashflow':
-        return <CashFlowView user={user} />;
+        return (
+          <div className="space-y-4">
+            {cfFirstVisit && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start justify-between">
+                <div>
+                  <p className="font-semibold text-blue-800 text-sm">Cash Flow Analysis</p>
+                  <p className="text-xs text-blue-600 mt-1 leading-relaxed">
+                    Enter your down payment, interest rate, and expense assumptions. We'll rank every zip code by cash-on-cash return using real Zillow rent data — no guessing.
+                  </p>
+                  <p className="text-xs text-blue-500 mt-1.5">Start by picking a state and setting your down payment budget.</p>
+                </div>
+                <button onClick={() => setCfFirstVisit(false)} className="text-blue-300 hover:text-blue-500 ml-4 flex-shrink-0 text-lg leading-none">✕</button>
+              </div>
+            )}
+            <CashFlowView user={user} />
+          </div>
+        );
 
       case 'finder':
-        return <MarketFinder user={user} />;
+        return (
+          <div className="space-y-4">
+            {finderFirstVisit && (
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-start justify-between">
+                <div>
+                  <p className="font-semibold text-purple-800 text-sm">Find My Market — 4-step wizard</p>
+                  <p className="text-xs text-purple-600 mt-1 leading-relaxed">
+                    Answer a few questions about your budget, target states, and investment goals. We'll score every market and surface the top 25 that match your criteria.
+                  </p>
+                  <p className="text-xs text-purple-500 mt-1.5">Great for investors who don't know which state or city to target yet.</p>
+                </div>
+                <button onClick={() => setFinderFirstVisit(false)} className="text-purple-300 hover:text-purple-500 ml-4 flex-shrink-0 text-lg leading-none">✕</button>
+              </div>
+            )}
+            <MarketFinder user={user} />
+          </div>
+        );
 
       case 'analytics': {
         return (
@@ -346,7 +381,7 @@ const ROIscoutDashboard = ({ user }) => {
         {/* ── Main content ──────────────────────────────────────────────── */}
         <main className="flex-1 overflow-auto">
           {/* Tab body */}
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {renderTabContent()}
           </div>
         </main>

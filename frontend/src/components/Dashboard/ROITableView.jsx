@@ -72,14 +72,13 @@ const ROITableView = ({ user }) => {
   };
 
   const handleSaveSearch = async (name) => {
-    try { await apiService.saveSearch({ searchName: name, filters }); }
-    catch (e) { console.error('Save search failed', e); }
+    await apiService.saveSearch({ searchName: name, filters });
   };
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-slate-200">
-        <div className="flex items-start justify-between mb-4">
+      <div className="p-3 sm:p-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">ROI by Zip Code</h2>
             <p className="text-slate-500 text-sm mt-1">

@@ -7,6 +7,9 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
   const [zipCodes, setZipCodes]           = useState([]);
   const [saveSearchName, setSaveSearchName] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saving, setSaving]               = useState(false);
+  const [saveError, setSaveError]         = useState('');
+  const [saveSuccess, setSaveSuccess]     = useState(false);
   const [linkCopied, setLinkCopied]       = useState(false);
 
   useEffect(() => { loadStates(); }, []);
@@ -32,8 +35,21 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
     onFilterChange(next);
   };
 
-  const handleSaveSearch = () => {
-    if (saveSearchName.trim()) { onSaveSearch(saveSearchName.trim()); setSaveSearchName(''); setShowSaveModal(false); }
+  const handleSaveSearch = async () => {
+    if (!saveSearchName.trim()) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await onSaveSearch(saveSearchName.trim());
+      setSaveSearchName('');
+      setShowSaveModal(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (e) {
+      setSaveError(e.response?.data?.message || 'Failed to save — try a different name.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleShareView = () => {
@@ -122,9 +138,9 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
 
       {/* Save / Share */}
       {filters.state && (
-        <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-200">
           <button
-            onClick={() => setShowSaveModal(true)}
+            onClick={() => { setShowSaveModal(true); setSaveError(''); }}
             className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-300 hover:border-slate-400 px-3 py-1.5 rounded-lg transition-colors"
           >
             💾 Save Search
@@ -139,6 +155,11 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
           >
             {linkCopied ? '✓ Copied!' : '🔗 Share'}
           </button>
+          {saveSuccess && (
+            <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+              ✓ Search saved
+            </span>
+          )}
         </div>
       )}
 
@@ -156,8 +177,17 @@ const FilterPanel = ({ filters, onFilterChange, onSaveSearch }) => {
               autoFocus
               onKeyDown={e => e.key === 'Enter' && handleSaveSearch()}
             />
+            {saveError && (
+              <p className="text-red-500 text-xs mb-3 -mt-1">{saveError}</p>
+            )}
             <div className="flex gap-2">
-              <button onClick={handleSaveSearch} className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors">Save</button>
+              <button
+                onClick={handleSaveSearch}
+                disabled={saving}
+                className="flex-1 bg-green-600 hover:bg-green-500 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors"
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
               <button onClick={() => setShowSaveModal(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-4 rounded-lg text-sm transition-colors">Cancel</button>
             </div>
           </div>
