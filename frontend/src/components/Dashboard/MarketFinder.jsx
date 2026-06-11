@@ -12,6 +12,7 @@
 import React, { useState, useCallback } from 'react';
 import { apiService } from '../../services/api';
 import ROITable from './ROITable';
+import { getMarketFit } from '../../utils/marketFit';
 
 // ── US States for multi-select ─────────────────────────────────────────────────
 const US_STATES = [
@@ -421,6 +422,30 @@ function StepGoals({ data, set }) {
           </div>
         </button>
       </div>
+
+      <div>
+        <button
+          onClick={() => set('sweetSpotOnly', !data.sweetSpotOnly)}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all text-sm ${
+            data.sweetSpotOnly
+              ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
+              : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+          }`}
+        >
+          <div className="text-left">
+            <p className="font-medium">B-class sweet spot markets only</p>
+            <p className="text-xs opacity-70 mt-0.5">
+              Only show markets where your budget buys into the 40th–75th percentile of local home prices —
+              the range that attracts stable working/middle-class tenants with lower turnover
+            </p>
+          </div>
+          <div className={`w-5 h-5 rounded border-2 flex-shrink-0 ml-3 flex items-center justify-center ${
+            data.sweetSpotOnly ? 'bg-emerald-500 border-emerald-500' : 'border-gray-600'
+          }`}>
+            {data.sweetSpotOnly && <span className="text-white text-xs font-bold">✓</span>}
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
@@ -494,6 +519,7 @@ const DEFAULT_ANSWERS = {
   minHHIncome:      0,
   minPopulation:    0,
   bedroomPriceOnly: false,
+  sweetSpotOnly:    false,
 };
 
 const STEP_TITLES = [
@@ -562,11 +588,15 @@ const MarketFinder = ({ user }) => {
   };
 
   // Convert results data for ROITable (attach _computed as cashFlowParams-style)
-  const tableData = results?.data?.map(r => ({
+  const maxPrice = answers.downPct > 0 ? answers.downBudget / (answers.downPct / 100) : 0;
+  const tableData = (results?.data?.map(r => ({
     ...r,
-    // Expose computed values so ROITable expansion shows them
     _finderResult: r._computed,
-  })) || [];
+  })) || []).filter(r => {
+    if (!answers.sweetSpotOnly) return true;
+    const fit = getMarketFit(maxPrice, Number(r.median_price));
+    return fit?.isSweetSpot;
+  });
 
   // cashFlowParams object to pass to ROITable so CF breakdown shows in expanded rows
   const cfParams = results ? {

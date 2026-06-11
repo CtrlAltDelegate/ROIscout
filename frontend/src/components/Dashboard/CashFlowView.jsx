@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { Calculator } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { monthlyPI, STATE_TAX_RATES } from '../../utils/cashFlow';
+import { getMarketFit, budgetFromParams } from '../../utils/marketFit';
 import ROITable from './ROITable';
 
 // States are loaded from the API — only states with actual Zillow data are shown
@@ -81,6 +82,7 @@ const CashFlowView = ({ user }) => {
   const [loading, setLoading]                 = useState(false);
   const [error, setError]                     = useState(null);
   const [exporting, setExporting]             = useState(false);
+  const [sweetSpotOnly, setSweetSpotOnly]     = useState(false);
 
   // Load only states that have actual data
   useEffect(() => {
@@ -129,6 +131,17 @@ const CashFlowView = ({ user }) => {
 
   // Affordable markets check
   const affordableCount = maxPrice > 0 ? data.filter(r => r.median_price <= maxPrice).length : 0;
+
+  // Sweet spot filter: only markets where budget hits 40th–75th percentile (B-class)
+  const filteredData = sweetSpotOnly
+    ? data.filter(r => {
+        const fit = getMarketFit(maxPrice, Number(r.median_price));
+        return fit?.isSweetSpot;
+      })
+    : data;
+  const sweetSpotCount = maxPrice > 0
+    ? data.filter(r => getMarketFit(maxPrice, Number(r.median_price))?.isSweetSpot).length
+    : 0;
 
   const handleExportCSV = async () => {
     setExporting(true);
@@ -308,7 +321,7 @@ const CashFlowView = ({ user }) => {
 
       {/* ── Results ── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-b border-slate-200">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
               {params.state
@@ -317,11 +330,28 @@ const CashFlowView = ({ user }) => {
             </h3>
             {data.length > 0 && maxPrice > 0 && (
               <p className="text-xs text-slate-400 mt-0.5">
-                Showing {affordableCount} of {data.length} markets within your ${fmt(maxPrice)} budget ·
-                Rent from Zillow ZORI
+                {sweetSpotOnly
+                  ? `${sweetSpotCount} B-class sweet spot markets (40th–75th pct) within budget`
+                  : `${affordableCount} of ${data.length} markets within your $${fmt(maxPrice)} budget`}
+                {' · '}Rent from Zillow ZORI
               </p>
             )}
           </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {data.length > 0 && maxPrice > 0 && (
+              <button
+                onClick={() => setSweetSpotOnly(v => !v)}
+                className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                  sweetSpotOnly
+                    ? 'bg-emerald-600 border-emerald-600 text-white'
+                    : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                }`}
+                title="Only show markets where your budget buys into the 40th–75th percentile — the sweet spot for stable tenants and strong yields"
+              >
+                ✓ B-class sweet spot only
+                {sweetSpotOnly && <span className="opacity-70">({sweetSpotCount})</span>}
+              </button>
+            )}
 
           {isPro && data.length > 0 && params.state && (
             <button
@@ -337,6 +367,7 @@ const CashFlowView = ({ user }) => {
               🔒 Export <span className="text-blue-600 font-semibold">Pro</span>
             </Link>
           )}
+          </div>
         </div>
 
         <div className="p-5">
@@ -368,7 +399,7 @@ const CashFlowView = ({ user }) => {
 
           {params.state && !loading && !error && data.length > 0 && (
             <ROITable
-              data={data}
+              data={filteredData}
               dataLastUpdated={dataLastUpdated}
               dataSources={dataSources}
               cashFlowParams={params}

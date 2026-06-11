@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import DataFreshnessBadge from '../Shared/DataFreshnessBadge';
 import { calcCashFlow } from '../../utils/cashFlow';
+import { getMarketFit, budgetFromParams } from '../../utils/marketFit';
 
 /** Format a growth rate with +/- sign and color */
 const GrowthBadge = ({ value, label }) => {
@@ -30,6 +31,36 @@ const MarketDot = ({ row }) => {
     <span className="ml-1.5 inline-flex items-center gap-1">
       <span className={`w-1.5 h-1.5 rounded-full ${color} inline-block`} />
       <span className="text-gray-500 text-xs">{label}</span>
+    </span>
+  );
+};
+
+/** Market Fit badge — shows A/B/C/D class + approximate percentile */
+const MarketFitBadge = ({ budget, medianPrice }) => {
+  const fit = getMarketFit(budget, medianPrice);
+  if (!fit) return <span className="text-gray-600 text-xs">—</span>;
+
+  const styles = {
+    A: 'bg-blue-900/40 text-blue-300 border-blue-700',
+    B: 'bg-emerald-900/40 text-emerald-300 border-emerald-700',
+    C: 'bg-yellow-900/30 text-yellow-300 border-yellow-700',
+    D: 'bg-red-900/30 text-red-300 border-red-800',
+  };
+  const tips = {
+    A: 'Luxury tier — thin tenant pool, low yields',
+    B: 'Sweet spot — stable tenants, lower turnover',
+    C: 'Elevated tenant risk, higher turnover',
+    D: 'Avoid — poor tenant quality, high vacancy',
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-semibold ${styles[fit.classLabel]}`}
+      title={`${tips[fit.classLabel]} · ~${fit.percentile}th percentile`}
+    >
+      {fit.classLabel}
+      <span className="font-normal opacity-70">~{fit.percentile}th</span>
+      {fit.isSweetSpot && <span className="ml-0.5">✓</span>}
     </span>
   );
 };
@@ -74,7 +105,8 @@ const getRentRatioColor = (r) => {
  *   cashFlowParams  — investor params from CashFlowPanel (null = standard view)
  */
 const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
-  const cfMode = !!cashFlowParams;
+  const cfMode   = !!cashFlowParams;
+  const cfBudget = cfMode ? budgetFromParams(cashFlowParams) : 0;
 
   const [sortField, setSortField]       = useState(cfMode ? 'cashOnCash' : 'gross_rental_yield');
   const [sortDirection, setSortDirection] = useState('desc');
@@ -197,6 +229,9 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                   <th className={`${thCls} text-right`} onClick={() => handleSort('cashOnCash')}>
                     CoC Return {getSortIcon('cashOnCash')}
                   </th>
+                  <th className={`${thCls} text-center`} title="Property class based on where your budget falls in this market's price distribution. B-class (40th–75th percentile) is the sweet spot for stable tenants and strong yields.">
+                    Fit ⓘ
+                  </th>
                 </>
               ) : (
                 <>
@@ -256,6 +291,9 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                         <td className={`px-4 py-3 text-right font-bold text-base ${cocColor(cf?.cashOnCash ?? 0)}`}>
                           {cf ? `${cf.cashOnCash.toFixed(1)}%` : '—'}
                         </td>
+                        <td className="px-4 py-3 text-center">
+                          <MarketFitBadge budget={cfBudget} medianPrice={Number(row.median_price)} />
+                        </td>
                       </>
                     ) : (
                       <>
@@ -275,7 +313,7 @@ const ROITable = ({ data, dataLastUpdated, dataSources, cashFlowParams }) => {
                   {/* Expanded detail row — all modes */}
                   {isExpanded && (
                     <tr className="bg-gray-900/60">
-                      <td colSpan={cfMode ? 7 : 8} className="px-6 py-5">
+                      <td colSpan={8} className="px-6 py-5">
                         <div className="space-y-4">
 
                           {/* CF breakdown (CF mode only) — waterfall order */}
