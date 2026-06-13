@@ -24,13 +24,16 @@ const emailService = require('./emailService');
 async function checkAndSendAlerts({ defaultThreshold = 8 } = {}) {
   console.log('🔔 Alert check starting…');
 
-  // 1. Get all Pro users with saved searches
+  // 1. Get all Pro users with saved searches who have alerts enabled
   const { rows: proUsers } = await query(`
-    SELECT DISTINCT u.id, u.email
+    SELECT DISTINCT u.id, u.email,
+      COALESCE(u.alerts_enabled,  TRUE)  AS alerts_enabled,
+      COALESCE(u.alert_threshold, 8.0)   AS alert_threshold
     FROM users u
     JOIN saved_searches ss ON ss.user_id = u.id
     WHERE u.subscription_plan = 'pro'
       AND u.email IS NOT NULL
+      AND COALESCE(u.alerts_enabled, TRUE) = TRUE
   `);
 
   if (proUsers.length === 0) {
@@ -52,6 +55,9 @@ async function checkAndSendAlerts({ defaultThreshold = 8 } = {}) {
 
     const matchingSections = [];
 
+    // Use per-user threshold, falling back to the run-level default
+    const threshold = parseFloat(user.alert_threshold) || defaultThreshold;
+
     for (const search of searches) {
       let filters;
       try {
@@ -64,8 +70,8 @@ async function checkAndSendAlerts({ defaultThreshold = 8 } = {}) {
 
       if (!filters?.state) continue;
 
-      // 3. Find top markets for this search that exceed the threshold
-      const conditions = ['state = $1', `gross_rental_yield >= ${defaultThreshold}`, 'median_price > 0', 'median_rent > 0'];
+      // 3. Find top markets for this search that exceed the user's threshold
+      const conditions = ['state = $1', `gross_rental_yield >= ${threshold}`, 'median_price > 0', 'median_rent > 0'];
       const params = [filters.state.toUpperCase()];
       let p = 1;
 
@@ -93,7 +99,7 @@ async function checkAndSendAlerts({ defaultThreshold = 8 } = {}) {
 
     // 4. Send digest email
     try {
-      await sendAlertEmail(user.email, matchingSections, defaultThreshold);
+      await sendAlertEmail(user.email, matchingSections, threshold);
       usersAlerted++;
       console.log(`   ✉️  Alert sent to ${user.email} (${matchingSections.length} search(es))`);
     } catch (err) {

@@ -5,13 +5,14 @@ import {
 } from 'recharts';
 import {
   Map, Search, BarChart2, Bookmark, Calculator,
-  Info, Compass, Menu, X,
+  Info, Compass, Menu, X, Settings,
 } from 'lucide-react';
 import MapboxROIMap from '../Map/MapboxROIMap';
 import ROITableView from './ROITableView';
 import CashFlowView from './CashFlowView';
 import MarketFinder from './MarketFinder';
 import SavedSearches from './SavedSearches';
+import AccountSettings from './AccountSettings';
 import { apiService } from '../../services/api';
 
 const VALID_TABS = ['map', 'list', 'cashflow', 'finder', 'analytics', 'saved'];
@@ -42,6 +43,7 @@ const ROIscoutDashboard = ({ user }) => {
   const [savedSearches, setSavedSearches]     = useState([]);
   const [savedLoading, setSavedLoading]       = useState(false);
   const [sidebarOpen, setSidebarOpen]         = useState(false);
+  const [showSettings, setShowSettings]       = useState(false);
 
   const userPlan  = user?.subscription_plan || user?.plan || 'free';
   const isAdmin   = !!user?.is_admin;
@@ -367,9 +369,16 @@ const ROIscoutDashboard = ({ user }) => {
             })}
           </nav>
 
-          {/* Data source footnote */}
-          <div className="px-4 py-4 border-t border-slate-800">
-            <p className="text-xs text-slate-500 leading-relaxed">
+          {/* Sidebar footer */}
+          <div className="px-3 py-4 border-t border-slate-800 space-y-2">
+            <button
+              onClick={() => { setSidebarOpen(false); setShowSettings(true); }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-left border-l-2 border-transparent"
+            >
+              <Settings size={16} />
+              Account Settings
+            </button>
+            <p className="text-xs text-slate-600 leading-relaxed px-3">
               Data: Zillow ZHVI + ZORI
               {stats?.dataLastUpdated
                 ? ` · ${new Date(stats.dataLastUpdated).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
@@ -386,6 +395,11 @@ const ROIscoutDashboard = ({ user }) => {
           </div>
         </main>
       </div>
+
+      {/* Account settings modal */}
+      {showSettings && (
+        <AccountSettings user={user} onClose={() => setShowSettings(false)} />
+      )}
 
       {/* Save prompt */}
       {showSavePrompt && isFree && (

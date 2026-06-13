@@ -83,6 +83,7 @@ const CashFlowView = ({ user }) => {
   const [error, setError]                     = useState(null);
   const [exporting, setExporting]             = useState(false);
   const [sweetSpotOnly, setSweetSpotOnly]     = useState(false);
+  const [calcOpen, setCalcOpen]               = useState(true);
 
   // Load only states that have actual data
   useEffect(() => {
@@ -156,20 +157,27 @@ const CashFlowView = ({ user }) => {
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-semibold text-white flex items-center"><Calculator className="w-5 h-5 text-green-400 mr-2 inline-block" />Cash Flow Calculator</h3>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">
               We use Zillow ZORI median rents per zip — you never need to enter rent.
-              Set your investment parameters and pick a state to rank markets by cash-on-cash return.
             </p>
           </div>
-          <button onClick={reset} className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0 ml-4">
-            Reset defaults
-          </button>
+          <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+            <button onClick={reset} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Reset
+            </button>
+            <button
+              onClick={() => setCalcOpen(v => !v)}
+              className="sm:hidden text-xs text-gray-400 hover:text-white border border-gray-600 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              {calcOpen ? 'Collapse ▲' : 'Edit params ▼'}
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${calcOpen ? '' : 'hidden sm:grid'}`}>
 
           {/* ── Property ── */}
           <div>
@@ -177,7 +185,7 @@ const CashFlowView = ({ user }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <FieldLabel>State</FieldLabel>
-                <select value={params.state} onChange={e => setRaw('state', e.target.value)} className={selectCls}>
+                <select value={params.state} onChange={e => { setRaw('state', e.target.value); if (e.target.value && window.innerWidth < 640) setCalcOpen(false); }} className={selectCls}>
                   <option value="">Select a state…</option>
                   {states.map(s => (
                     <option key={s.code} value={s.code}>{s.name} ({s.code})</option>

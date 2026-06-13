@@ -310,10 +310,10 @@ function StepGoals({ data, set }) {
     <div className="space-y-5">
       <div>
         <FieldLabel sub="(annual cash flow ÷ down payment)">Minimum Cash-on-Cash Return</FieldLabel>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-5 gap-1">
           {[5, 8, 10, 12, 15].map(n => (
             <button key={n} onClick={() => set('minCoc', n)}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-all ${
+              className={`py-2.5 rounded-lg text-xs sm:text-sm font-medium border transition-all ${
                 data.minCoc === n ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
               }`}>
               {n}%+
@@ -343,7 +343,7 @@ function StepGoals({ data, set }) {
 
       <div>
         <FieldLabel sub="Filters out markets where distressed properties skew the median below realistic purchase prices">Minimum Median Home Price</FieldLabel>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
           {[
             { label: 'Any',     value: 0      },
             { label: '$75k+',   value: 75000  },
@@ -352,7 +352,7 @@ function StepGoals({ data, set }) {
             { label: '$200k+',  value: 200000 },
           ].map(({ label, value }) => (
             <button key={value} onClick={() => set('minMedianPrice', value)}
-              className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-all ${
+              className={`py-2.5 rounded-lg text-xs font-medium border transition-all ${
                 data.minMedianPrice === value ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
               }`}>
               {label}
@@ -363,16 +363,16 @@ function StepGoals({ data, set }) {
 
       <div>
         <FieldLabel sub="Markets below this threshold often have weaker tenant pools and higher vacancy risk">Minimum Median Household Income</FieldLabel>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
           {[
-            { label: 'Any',     value: 0     },
-            { label: '$35k+',   value: 35000 },
-            { label: '$45k+',   value: 45000 },
-            { label: '$55k+',   value: 55000 },
-            { label: '$65k+',   value: 65000 },
+            { label: 'Any',   value: 0     },
+            { label: '$35k+', value: 35000 },
+            { label: '$45k+', value: 45000 },
+            { label: '$55k+', value: 55000 },
+            { label: '$65k+', value: 65000 },
           ].map(({ label, value }) => (
             <button key={value} onClick={() => set('minHHIncome', value)}
-              className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-all ${
+              className={`py-2.5 rounded-lg text-xs font-medium border transition-all ${
                 data.minHHIncome === value ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
               }`}>
               {label}
@@ -383,16 +383,16 @@ function StepGoals({ data, set }) {
 
       <div>
         <FieldLabel>Minimum Market Size</FieldLabel>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
           {[
-            { label: 'Any',    value: 0     },
-            { label: '2,500+', value: 2500  },
-            { label: '5,000+', value: 5000  },
-            { label: '10,000+',value: 10000 },
-            { label: '25,000+',value: 25000 },
+            { label: 'Any',     value: 0     },
+            { label: '2,500+',  value: 2500  },
+            { label: '5,000+',  value: 5000  },
+            { label: '10,000+', value: 10000 },
+            { label: '25,000+', value: 25000 },
           ].map(({ label, value }) => (
             <button key={value} onClick={() => set('minPopulation', value)}
-              className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-all ${
+              className={`py-2.5 rounded-lg text-xs font-medium border transition-all ${
                 data.minPopulation === value ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
               }`}>
               {label}

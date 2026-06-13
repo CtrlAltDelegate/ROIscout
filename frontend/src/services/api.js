@@ -173,5 +173,15 @@ export const apiService = {
     const response = await apiClient.get('/map/usage');
     return response.data;
   },
+
+  // User alert settings
+  async getAlertSettings() {
+    const response = await apiClient.get('/user/settings');
+    return response.data;
+  },
+  async updateAlertSettings(settings) {
+    const response = await apiClient.put('/user/settings', settings);
+    return response.data;
+  },
 };
 
